@@ -88,7 +88,13 @@ class AuthFlowTests {
                 org.junit.jupiter.api.Assertions.assertNotEquals(401, result.getResponse().getStatus()));
     }
 
+    // .with(csrf()) remplace durablement le dépôt de jetons CSRF du filtre dans le contexte Spring
+    // partagé entre les classes de test : le cookie XSRF-TOKEN n'est alors plus posé. Ce test
+    // vérifie le vrai comportement de l'application, donc il exige un contexte non pollué
+    // (sinon il dépend de l'ordre d'exécution des classes).
     @Test
+    @org.springframework.test.annotation.DirtiesContext(
+            methodMode = org.springframework.test.annotation.DirtiesContext.MethodMode.BEFORE_METHOD)
     void csrfCookieIsSetOnPlainGet() throws Exception {
         // Sans ce cookie, Angular ne pourrait jamais envoyer X-XSRF-TOKEN sur ses POST
         mvc.perform(get("/api/auth/me"))
