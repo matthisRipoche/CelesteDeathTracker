@@ -1,0 +1,33 @@
+# Secrets et configuration locale
+.env
+*.pem
+*.key
+deploy/backups/
+
+# API (Spring Boot / Maven)
+api/target/
+api/data/
+api/.idea/
+api/.vscode/
+
+# Site (Angular)
+web/node_modules/
+web/dist/
+web/.angular/
+web/.vscode/
+
+# Mod C#
+CelesteDeathTracker/bin/
+CelesteDeathTracker/obj/
+# DLL de sauvegarde créées pendant le déploiement du mod
+CelesteDeathTracker/*.previous
+CelesteDeathTracker/*.steam-previous
+
+# Ancien prototype : ni dépendances ni données de jeu personnelles
+dashboard-legacy/node_modules/
+dashboard-legacy/deaths.json
+
+# Divers
+.DS_Store
+Thumbs.db
+*.log

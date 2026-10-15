@@ -1,0 +1,88 @@
+<header>
+  <h1>Celeste Death Tracker</h1>
+  <div class="right">
+    @switch (state().status) {
+      @case ('ok') { <span class="status ok">● à jour · actualisation toutes les 3 s</span> }
+      @case ('error') { <span class="status error">● API injoignable</span> }
+      @default { <span class="status">● chargement…</span> }
+    }
+    <a routerLink="/pair" class="nav">Associer un jeu</a>
+    <a routerLink="/tokens" class="nav">Appareils</a>
+    <span class="user">{{ user()?.email }}</span>
+    <button type="button" class="logout" (click)="logout()">Déconnexion</button>
+  </div>
+</header>
+
+<main>
+  @if (state().status === 'error') {
+    <div class="banner">
+      Impossible de joindre l'API. Vérifie qu'elle tourne (<code>docker compose ps</code>).
+    </div>
+  }
+
+  <section class="cards">
+    <div class="card">
+      <span class="label">Morts enregistrées</span>
+      <span class="value">{{ total() | number }}</span>
+    </div>
+    <div class="card">
+      <span class="label">Rooms touchées</span>
+      <span class="value">{{ roomCount() }}</span>
+    </div>
+    <div class="card">
+      <span class="label">Chapitres</span>
+      <span class="value">{{ byChapter().length }}</span>
+    </div>
+  </section>
+
+  @if (state().status === 'ok' && total() === 0) {
+    <p class="empty">
+      Aucune mort pour l'instant. Lance Celeste : un code s'affiche en haut de l'écran, saisis-le
+      sur <a routerLink="/pair">Associer un jeu</a>, puis meurs un peu 😉
+    </p>
+  }
+
+  <div class="grid">
+    <section class="panel">
+      <h2>Rooms les plus meurtrières</h2>
+      @for (r of topRooms(); track r.label) {
+        <div class="bar-row">
+          <span class="bar-label" [title]="r.label">{{ r.label }}</span>
+          <div class="bar"><div class="fill" [style.width.%]="(r.count / maxRoom()) * 100"></div></div>
+          <span class="bar-count">{{ r.count }}</span>
+        </div>
+      }
+    </section>
+
+    <section class="panel">
+      <h2>Par chapitre</h2>
+      @for (c of byChapter(); track c.label) {
+        <div class="bar-row">
+          <span class="bar-label" [title]="c.label">{{ c.label }}</span>
+          <div class="bar"><div class="fill alt" [style.width.%]="(c.count / maxChapter()) * 100"></div></div>
+          <span class="bar-count">{{ c.count }}</span>
+        </div>
+      }
+    </section>
+  </div>
+
+  <section class="panel">
+    <h2>Dernières morts</h2>
+    <table>
+      <thead>
+        <tr><th>Heure</th><th>Mod</th><th>Map</th><th>Room</th><th>Position</th></tr>
+      </thead>
+      <tbody>
+        @for (d of recent(); track d.id) {
+          <tr>
+            <td>{{ d.timestamp | date: 'HH:mm:ss' }}</td>
+            <td>{{ modName(d.chapter) }}</td>
+            <td>{{ mapName(d.chapter) }}</td>
+            <td>{{ d.room }}</td>
+            <td class="muted">{{ d.deathX }}, {{ d.deathY }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </section>
+</main>

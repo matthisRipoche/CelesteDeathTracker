@@ -1,0 +1,6 @@
+# Chargé automatiquement en dev par `docker compose up`. Ignoré en prod si on précise -f docker-compose.yml.
+# Publie PostgreSQL sur la machine pour lancer l'API et le front hors Docker (./mvnw spring-boot:run, ng serve).
+services:
+  db:
+    ports:
+      - "5432:5432"

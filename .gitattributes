@@ -1,0 +1,9 @@
+# Fins de ligne : les scripts exécutés sous Linux (serveur, CI, conteneurs) doivent rester en LF,
+# même si le dépôt est cloné sous Windows.
+* text=auto
+*.sh text eol=lf
+Dockerfile text eol=lf
+*.conf text eol=lf
+Caddyfile text eol=lf
+mvnw text eol=lf
+*.cmd text eol=crlf

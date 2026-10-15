@@ -1,0 +1,75 @@
+# Production : Caddy (HTTPS automatique) -> web (nginx) -> api -> db.
+# Rien n'est publié sur l'hôte sauf 80/443 (Caddy). La base et l'API ne sont pas joignables de l'extérieur.
+#
+# Variables (fichier .env sur le serveur, jamais dans Git) :
+#   DOMAIN, POSTGRES_PASSWORD, IMAGE_PREFIX, TAG
+# Lancé par la CI (voir .github/workflows/ci-cd.yml) ou à la main :
+#   docker compose -f docker-compose.prod.yml up -d
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMAIN: ${DOMAIN:?définir DOMAIN dans .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data      # certificats Let's Encrypt : à conserver entre les redéploiements
+      - caddy_config:/config
+    depends_on:
+      - web
+
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: celeste
+      POSTGRES_USER: celeste
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?définir POSTGRES_PASSWORD dans .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U celeste -d celeste"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    image: ${IMAGE_PREFIX:?définir IMAGE_PREFIX dans .env}-api:${TAG:-latest}
+    restart: unless-stopped
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/celeste
+      DB_USER: celeste
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      # Adresse du SITE : le mod ouvre https://<domaine>/pair pour l'association
+      PUBLIC_URL: https://${DOMAIN}
+      # Le navigateur parle HTTPS à Caddy : cookies de session marqués Secure
+      SERVER_SERVLET_SESSION_COOKIE_SECURE: "true"
+      SERVER_SERVLET_SESSION_COOKIE_SAME_SITE: lax
+      # Laisse de la marge à la base et à Caddy sur un petit VPS
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=60"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5000/actuator/health | grep -q UP"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
+
+  web:
+    image: ${IMAGE_PREFIX}-web:${TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

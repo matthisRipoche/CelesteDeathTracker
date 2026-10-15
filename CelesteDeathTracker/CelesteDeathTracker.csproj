@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Doit correspondre au runtime de l'Everest installé (Celeste.runtimeconfig.json : net8.0) -->
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>CelesteDeathTracker</AssemblyName>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(CELESTE_PATH)'==''">
+    <CELESTE_PATH>D:\steam\steamapps\common\Celeste</CELESTE_PATH>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Celeste.dll contient les types du jeu ET les types Everest (MonoMod les fusionne au build) -->
+    <Reference Include="Celeste">
+      <HintPath>$(CELESTE_PATH)\Celeste.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- MMHOOK fournit les délégués On.Celeste.* et IL.Celeste.* -->
+    <Reference Include="MMHOOK_Celeste">
+      <HintPath>$(CELESTE_PATH)\MMHOOK_Celeste.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="MonoMod.RuntimeDetour">
+      <HintPath>$(CELESTE_PATH)\MonoMod.RuntimeDetour.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="MonoMod.Utils">
+      <HintPath>$(CELESTE_PATH)\MonoMod.Utils.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="FNA">
+      <HintPath>$(CELESTE_PATH)\FNA.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+</Project>

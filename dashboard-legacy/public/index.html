@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Celeste Death Tracker</title>
+  <style>
+    :root {
+      --bg: #0d0d1a;
+      --surface: #16162a;
+      --border: #2a2a4a;
+      --accent: #e84393;
+      --accent2: #7b5ea7;
+      --text: #e8e8f0;
+      --muted: #888aaa;
+      --danger: #e84343;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 14px;
+      min-height: 100vh;
+    }
+
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    header h1 { font-size: 20px; color: var(--accent); letter-spacing: 0.5px; }
+    header span { color: var(--muted); font-size: 12px; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      padding: 24px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+    }
+
+    .card h2 {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .stat-big {
+      font-size: 48px;
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1;
+    }
+
+    .stat-label { color: var(--muted); font-size: 12px; margin-top: 4px; }
+
+    .bar-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .bar-label {
+      width: 180px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-size: 12px;
+      color: var(--text);
+    }
+
+    .bar-track {
+      flex: 1;
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent2), var(--accent));
+      border-radius: 3px;
+      transition: width 0.4s ease;
+    }
+
+    .bar-count { min-width: 28px; text-align: right; color: var(--muted); font-size: 12px; }
+
+    .feed { max-height: 320px; overflow-y: auto; }
+
+    .feed-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+    }
+
+    .feed-item:last-child { border-bottom: none; }
+    .feed-room { color: var(--text); }
+    .feed-chapter { color: var(--muted); font-size: 11px; }
+    .feed-time { color: var(--accent); white-space: nowrap; }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      background: var(--accent2);
+      color: #fff;
+    }
+
+    button {
+      background: var(--danger);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 16px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: opacity 0.2s;
+    }
+    button:hover { opacity: 0.8; }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #444;
+      display: inline-block;
+      margin-right: 6px;
+    }
+    .status-dot.live { background: #4caf50; box-shadow: 0 0 6px #4caf50; }
+
+    .span-full { grid-column: 1 / -1; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Celeste Death Tracker</h1>
+  <span>
+    <span class="status-dot" id="dot"></span>
+    <span id="status-text">En attente...</span>
+    &nbsp;|&nbsp; Actualisation : 3s
+  </span>
+</header>
+
+<div class="grid">
+
+  <div class="card">
+    <h2>Morts totales</h2>
+    <div class="stat-big" id="total">–</div>
+    <div class="stat-label">depuis le début du tracking</div>
+  </div>
+
+  <div class="card">
+    <h2>Dernière mort</h2>
+    <div id="last-room" style="font-size:18px;font-weight:600;color:var(--text)">–</div>
+    <div id="last-chapter" class="stat-label"></div>
+    <div id="last-pos" class="stat-label" style="margin-top:4px;color:var(--muted)"></div>
+  </div>
+
+  <div class="card">
+    <h2>Rooms les plus meurtrières</h2>
+    <div id="top-rooms"></div>
+  </div>
+
+  <div class="card">
+    <h2>Par chapitre</h2>
+    <div id="by-chapter"></div>
+  </div>
+
+  <div class="card span-full">
+    <h2>Flux en direct <span class="badge" id="feed-count">0</span></h2>
+    <div class="feed" id="feed"></div>
+  </div>
+
+  <div class="card">
+    <h2>Actions</h2>
+    <button onclick="resetData()">Effacer toutes les morts</button>
+  </div>
+
+</div>
+
+<script>
+const API = '/api';
+let maxRoomCount = 1;
+
+function fmt(ms) {
+  const d = new Date(ms);
+  return d.toLocaleTimeString('fr-FR');
+}
+
+function renderBars(container, data) {
+  const max = Math.max(...Object.values(data), 1);
+  container.innerHTML = Object.entries(data).map(([label, count]) => `
+    <div class="bar-row">
+      <div class="bar-label" title="${label}">${label}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${(count/max*100).toFixed(1)}%"></div></div>
+      <div class="bar-count">${count}</div>
+    </div>
+  `).join('');
+}
+
+async function refresh() {
+  try {
+    const r = await fetch(`${API}/stats`);
+    const s = await r.json();
+
+    document.getElementById('dot').className = 'status-dot live';
+    document.getElementById('status-text').textContent = 'Connecté';
+
+    document.getElementById('total').textContent = s.total;
+
+    if (s.lastDeath) {
+      document.getElementById('last-room').textContent = s.lastDeath.room || '–';
+      document.getElementById('last-chapter').textContent = s.lastDeath.chapter || '';
+      document.getElementById('last-pos').textContent =
+        `X: ${s.lastDeath.deathX}  Y: ${s.lastDeath.deathY}  |  ${fmt(s.lastDeath.timestamp)}`;
+    }
+
+    renderBars(document.getElementById('top-rooms'), s.byRoom);
+    renderBars(document.getElementById('by-chapter'), s.byChapter);
+
+    const feed = document.getElementById('feed');
+    const recent = (s.recentDeaths || []).slice().reverse().slice(0, 30);
+    document.getElementById('feed-count').textContent = recent.length;
+    feed.innerHTML = recent.map(d => `
+      <div class="feed-item">
+        <div>
+          <div class="feed-room">${d.room}</div>
+          <div class="feed-chapter">${d.chapter}</div>
+        </div>
+        <div class="feed-time">${fmt(d.timestamp)}</div>
+      </div>
+    `).join('');
+  } catch {
+    document.getElementById('dot').className = 'status-dot';
+    document.getElementById('status-text').textContent = 'Serveur inaccessible';
+  }
+}
+
+async function resetData() {
+  if (!confirm('Effacer toutes les morts ?')) return;
+  await fetch(`${API}/deaths`, { method: 'DELETE' });
+  await refresh();
+}
+
+refresh();
+setInterval(refresh, 3000);
+</script>
+</body>
+</html>

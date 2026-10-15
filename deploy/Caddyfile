@@ -1,0 +1,16 @@
+# Caddy obtient et renouvelle seul le certificat Let's Encrypt pour {$DOMAIN}.
+# Prérequis : l'enregistrement DNS A du domaine pointe vers l'IP du serveur, ports 80 et 443 ouverts.
+{$DOMAIN} {
+	encode zstd gzip
+
+	# Tout passe par le conteneur web (nginx) : site statique + relais de /api vers l'API
+	reverse_proxy web:80
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+}

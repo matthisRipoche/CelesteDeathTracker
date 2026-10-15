@@ -1,0 +1,81 @@
+<header>
+  <h1>Associer un jeu</h1>
+  <a routerLink="/">← Tableau de bord</a>
+</header>
+
+<main>
+  @switch (step()) {
+    @case ('enter') {
+      <section class="panel">
+        <h2>Saisis le code affiché dans ton jeu</h2>
+        <p class="hint">
+          Lance Celeste avec le mod Death Tracker : un bandeau en haut de l'écran affiche un code
+          du type <strong>K7QM-4XRD</strong>. Il est valable 10 minutes.
+        </p>
+        <form [formGroup]="form" (ngSubmit)="check()" novalidate>
+          <input
+            type="text"
+            formControlName="code"
+            placeholder="XXXX-XXXX"
+            maxlength="9"
+            autocomplete="off"
+            autocapitalize="characters"
+            spellcheck="false"
+            aria-label="Code d'association"
+          />
+          <button type="submit" [disabled]="busy()">Continuer</button>
+        </form>
+        @if (form.controls.code.touched && form.controls.code.invalid) {
+          <span class="field-error">Le code comporte 8 caractères.</span>
+        }
+      </section>
+    }
+
+    @case ('confirm') {
+      <section class="panel">
+        <h2>Autoriser cet appareil ?</h2>
+        @if (request(); as req) {
+          <dl>
+            <dt>Appareil</dt><dd>{{ req.deviceName }}</dd>
+            <dt>Code</dt><dd class="code">{{ req.userCode }}</dd>
+            <dt>Demandé</dt><dd>{{ req.requestedAt | date: 'dd/MM/yyyy HH:mm:ss' }}</dd>
+          </dl>
+        }
+        <p class="warning">
+          Autorise seulement si <strong>c'est toi</strong> qui viens de lancer le jeu et que ce code
+          est bien celui affiché à l'écran. Cet appareil pourra envoyer des morts sur ton compte.
+        </p>
+        <div class="actions">
+          <button type="button" (click)="approve()" [disabled]="busy()">Autoriser</button>
+          <button type="button" class="secondary" (click)="deny()" [disabled]="busy()">Refuser</button>
+        </div>
+      </section>
+    }
+
+    @case ('done') {
+      <section class="panel success" role="status">
+        <h2>Jeu associé ✓</h2>
+        <p>
+          Retourne dans Celeste : le bandeau va disparaître dans quelques secondes et tes morts
+          arriveront sur ton <a routerLink="/">tableau de bord</a>. Tu n'as plus rien à faire.
+        </p>
+        <p class="hint">
+          Tu retrouves cet appareil dans <a routerLink="/tokens">Tokens d'API</a>, où tu peux le
+          révoquer à tout moment.
+        </p>
+      </section>
+    }
+
+    @case ('denied') {
+      <section class="panel" role="status">
+        <h2>Demande refusée</h2>
+        <p>Le jeu n'a pas été associé à ton compte.</p>
+        <div class="actions"><button type="button" (click)="restart()">Saisir un autre code</button></div>
+      </section>
+    }
+  }
+
+  @if (error(); as message) {
+    <div class="error" role="alert">{{ message }}</div>
+  }
+</main>

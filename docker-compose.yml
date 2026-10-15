@@ -1,0 +1,54 @@
+# Pile complète : PostgreSQL + API Spring Boot + front Angular (nginx).
+#   docker compose up -d --build      → http://localhost:8080
+# En dev, docker-compose.override.yml (chargé automatiquement) publie en plus le port 5432.
+# En prod : docker compose -f docker-compose.yml up -d --build   (sans override)
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: celeste
+      POSTGRES_USER: celeste
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?définir POSTGRES_PASSWORD dans .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U celeste -d celeste"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: ./api
+    restart: unless-stopped
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/celeste
+      DB_USER: celeste
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      # Adresse du SITE, ouverte par le mod pour l'association (page /pair)
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:8090}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      # Le mod C# poste ici (http://localhost:5000/api/deaths)
+      - "5000:5000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5000/actuator/health | grep -q UP"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 20s
+
+  web:
+    build: ./web
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${WEB_PORT:-8080}:80"
+
+volumes:
+  pgdata:

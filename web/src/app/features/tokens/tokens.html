@@ -1,0 +1,71 @@
+<header>
+  <h1>Tokens d'API</h1>
+  <a routerLink="/">← Retour au tableau de bord</a>
+</header>
+
+<main>
+  <section class="panel">
+    <h2>Comment ça marche</h2>
+    <p>
+      Chaque jeu associé reçoit un token qui dit au serveur à quel compte appartiennent ses morts.
+      Il est créé <strong>automatiquement</strong> quand tu associes un jeu (page
+      <a routerLink="/pair">Associer un jeu</a>) : tu n'as rien à copier. Un token ne permet que
+      d'envoyer des morts, jamais de lire tes données. Révoque-le ici si tu perds un appareil.
+      La création manuelle ci-dessous ne sert que pour un usage avancé.
+    </p>
+  </section>
+
+  @if (justCreated(); as created) {
+    <section class="panel created" role="status">
+      <h2>Token « {{ created.label }} » créé</h2>
+      <p class="warning">Copie-le maintenant : il ne sera <strong>plus jamais affiché</strong>.</p>
+      <code class="token">{{ created.token }}</code>
+      <div class="actions">
+        <button type="button" (click)="copy()">{{ copied() ? 'Copié ✓' : 'Copier' }}</button>
+        <button type="button" class="secondary" (click)="dismiss()">J'ai copié le token</button>
+      </div>
+    </section>
+  }
+
+  <section class="panel">
+    <h2>Nouveau token</h2>
+    <form [formGroup]="form" (ngSubmit)="create()" novalidate>
+      <input type="text" formControlName="label" placeholder="Nom (ex. PC fixe)" maxlength="100" />
+      <button type="submit">Créer</button>
+    </form>
+    @if (form.controls.label.touched && form.controls.label.invalid) {
+      <span class="field-error">Donne un nom à ce token.</span>
+    }
+    @if (error(); as message) {
+      <div class="error" role="alert">{{ message }}</div>
+    }
+  </section>
+
+  <section class="panel">
+    <h2>Mes tokens</h2>
+    @if (tokens().length === 0) {
+      <p class="muted">Aucun token pour l'instant.</p>
+    } @else {
+      <table>
+        <thead>
+          <tr><th>Nom</th><th>Créé</th><th>Dernier envoi</th><th>État</th><th></th></tr>
+        </thead>
+        <tbody>
+          @for (t of tokens(); track t.id) {
+            <tr [class.revoked]="t.revoked">
+              <td>{{ t.label }}</td>
+              <td>{{ t.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+              <td>{{ t.lastUsedAt ? (t.lastUsedAt | date: 'dd/MM/yyyy HH:mm') : 'jamais' }}</td>
+              <td>{{ t.revoked ? 'Révoqué' : 'Actif' }}</td>
+              <td>
+                @if (!t.revoked) {
+                  <button type="button" class="danger" (click)="revoke(t)">Révoquer</button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </section>
+</main>
