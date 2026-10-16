@@ -136,7 +136,7 @@ jobs:
           DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '/opt/celeste' }}
         run: |
           scp -i ~/.ssh/deploy_key -P "$PORT" \
-            docker-compose.prod.yml deploy/Caddyfile deploy/backup.sh \
+            docker-compose.prod.yml deploy/backup.sh \
             "$USER@$HOST:$DEPLOY_PATH/"
 
       - name: Mise à jour des conteneurs

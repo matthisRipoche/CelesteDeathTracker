@@ -33,13 +33,7 @@ cd web && npm start
 
 L'API lit `DB_URL`, `DB_USER`, `DB_PASSWORD` (défauts pour le dev local dans `application.properties`).
 
-## Passer en production : checklist
+## Production
 
-- [ ] Mot de passe PostgreSQL fort, `.env` créé sur le serveur uniquement.
-- [ ] Lancer sans l'override : `docker compose -f docker-compose.yml up -d --build` (5432 non exposé).
-- [ ] **HTTPS** devant le site (Caddy ou Traefik ou nginx + Let's Encrypt). Indispensable avant d'envoyer des tokens d'API.
-- [ ] Ne plus publier `5000` en clair : faire passer le mod par `https://<domaine>/api/...` (nginx relaie déjà `/api`).
-- [ ] Sauvegardes : `docker compose exec -T db pg_dump -U celeste celeste > backup.sql` (planifié).
-- [ ] Mod : remplacer `localhost:{port}` par une `ServerUrl` configurable + token (voir `docs/auth-and-tokens.md`).
-- [ ] Authentification et limitation de débit avant d'ouvrir l'ingestion au public.
-- [ ] Journaux et supervision (au minimum `restart: unless-stopped`, déjà en place).
+La production passe par le Traefik déjà présent sur le VPS, avec déploiement automatique via GitHub Actions.
+Procédure complète, secrets, diagnostic et retour arrière : **`deploy/README.md`**.

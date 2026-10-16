@@ -1,28 +1,16 @@
-# Production : Caddy (HTTPS automatique) -> web (nginx) -> api -> db.
-# Rien n'est publié sur l'hôte sauf 80/443 (Caddy). La base et l'API ne sont pas joignables de l'extérieur.
+# Production derrière le Traefik DÉJÀ présent sur le serveur (il possède les ports 80/443 et gère
+# les certificats Let's Encrypt de tous les sites).
+#
+#   Internet ─▶ Traefik ─▶ web (nginx) ─▶ celeste-api ─▶ db
+#
+# Seul `web` rejoint le réseau de Traefik. L'API et la base restent sur le réseau privé du projet :
+# aucun autre conteneur du serveur ne peut les joindre. Aucun port n'est publié sur l'hôte.
 #
 # Variables (fichier .env sur le serveur, jamais dans Git) :
-#   DOMAIN, POSTGRES_PASSWORD, IMAGE_PREFIX, TAG
-# Lancé par la CI (voir .github/workflows/ci-cd.yml) ou à la main :
-#   docker compose -f docker-compose.prod.yml up -d
+#   DOMAIN, POSTGRES_PASSWORD, IMAGE_PREFIX, TAG                      (obligatoires)
+#   TRAEFIK_NETWORK, TRAEFIK_ENTRYPOINT, TRAEFIK_CERTRESOLVER         (à adapter à ton Traefik)
 
 services:
-  caddy:
-    image: caddy:2-alpine
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"
-    environment:
-      DOMAIN: ${DOMAIN:?définir DOMAIN dans .env}
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data      # certificats Let's Encrypt : à conserver entre les redéploiements
-      - caddy_config:/config
-    depends_on:
-      - web
-
   db:
     image: postgres:17-alpine
     restart: unless-stopped
@@ -41,17 +29,23 @@ services:
   api:
     image: ${IMAGE_PREFIX:?définir IMAGE_PREFIX dans .env}-api:${TAG:-latest}
     restart: unless-stopped
+    networks:
+      default:
+        # Nom unique : nginx s'adresse à "celeste-api", jamais à un "api" qui pourrait exister
+        # ailleurs sur le serveur.
+        aliases:
+          - celeste-api
     environment:
       DB_URL: jdbc:postgresql://db:5432/celeste
       DB_USER: celeste
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       # Adresse du SITE : le mod ouvre https://<domaine>/pair pour l'association
-      PUBLIC_URL: https://${DOMAIN}
-      # Le navigateur parle HTTPS à Caddy : cookies de session marqués Secure
+      PUBLIC_URL: https://${DOMAIN:?définir DOMAIN dans .env}
+      # Le navigateur parle HTTPS à Traefik : cookies de session marqués Secure
       SERVER_SERVLET_SESSION_COOKIE_SECURE: "true"
       SERVER_SERVLET_SESSION_COOKIE_SAME_SITE: lax
-      # Laisse de la marge à la base et à Caddy sur un petit VPS
-      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=60"
+      # Le serveur héberge d'autres applications : on borne la mémoire de la JVM
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=50"
     depends_on:
       db:
         condition: service_healthy
@@ -68,8 +62,31 @@ services:
     depends_on:
       api:
         condition: service_healthy
+    networks:
+      - default
+      - traefik
+    labels:
+      traefik.enable: "true"
+      # web est sur deux réseaux : on précise à Traefik lequel utiliser pour le joindre
+      traefik.docker.network: ${TRAEFIK_NETWORK:-frontend}
+
+      traefik.http.routers.celeste.rule: Host(`${DOMAIN}`)
+      traefik.http.routers.celeste.entrypoints: ${TRAEFIK_ENTRYPOINT:-websecure}
+      traefik.http.routers.celeste.tls: "true"
+      traefik.http.routers.celeste.tls.certresolver: ${TRAEFIK_CERTRESOLVER:-letsencrypt}
+      traefik.http.routers.celeste.middlewares: celeste-headers
+      traefik.http.services.celeste.loadbalancer.server.port: "80"
+
+      traefik.http.middlewares.celeste-headers.headers.stsSeconds: "31536000"
+      traefik.http.middlewares.celeste-headers.headers.contentTypeNosniff: "true"
+      traefik.http.middlewares.celeste-headers.headers.frameDeny: "true"
+      traefik.http.middlewares.celeste-headers.headers.referrerPolicy: strict-origin-when-cross-origin
+
+networks:
+  # Réseau du Traefik existant (créé par lui, pas par ce projet)
+  traefik:
+    external: true
+    name: ${TRAEFIK_NETWORK:-frontend}
 
 volumes:
   pgdata:
-  caddy_data:
-  caddy_config:
