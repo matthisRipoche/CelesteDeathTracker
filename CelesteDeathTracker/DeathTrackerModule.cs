@@ -10,6 +10,9 @@ using System.Threading.Tasks;
 
 namespace CelesteDeathTracker;
 
+/// <summary>Serveur vers lequel les morts sont envoyées. Chaque serveur a son propre token.</summary>
+public enum ServerTarget { Production, Local }
+
 public class DeathTrackerModule : EverestModule
 {
     public static DeathTrackerModule Instance { get; private set; } = null!;
@@ -24,10 +27,34 @@ public class DeathTrackerModule : EverestModule
     public override Type SettingsType => typeof(DeathTrackerSettings);
     public static DeathTrackerSettings Settings => (DeathTrackerSettings)Instance._Settings;
 
-    // Le serveur déduit le compte du token : on n'envoie jamais d'identifiant utilisateur.
-    internal static string BaseUrl  => Settings.ServerUrl.Trim().TrimEnd('/');
-    private static string DeathsUrl => $"{BaseUrl}/api/ingest/deaths";
-    private static string EventsUrl => $"{BaseUrl}/api/ingest/events";
+    // Vrai une fois les réglages chargés et migrés : avant, on ne réagit pas aux changements
+    // de serveur (le chargement du YAML appelle lui aussi les accesseurs).
+    private static volatile bool _ready;
+
+    // ------------------------------------------------------------------ serveur actif
+
+    internal static string NameOf(ServerTarget target) => target == ServerTarget.Production ? "Production" : "Local";
+
+    internal static string UrlFor(ServerTarget target) =>
+        (target == ServerTarget.Production ? Settings.ProductionUrl : Settings.LocalUrl).Trim().TrimEnd('/');
+
+    internal static string TokenFor(ServerTarget target) =>
+        (target == ServerTarget.Production ? Settings.ProductionToken : Settings.LocalToken).Trim();
+
+    internal static void SetToken(ServerTarget target, string token)
+    {
+        if (target == ServerTarget.Production) Settings.ProductionToken = token;
+        else Settings.LocalToken = token;
+    }
+
+    /// <summary>Appelé par le réglage quand l'utilisateur change de serveur dans le menu.</summary>
+    internal static void OnServerChanged()
+    {
+        if (!_ready) return;
+        PairingManager.Stop();
+        PairingManager.ClearView();
+        PairingManager.EnsureStarted();
+    }
 
     public DeathTrackerModule()
     {
@@ -45,9 +72,12 @@ public class DeathTrackerModule : EverestModule
     private PairingOverlay? _overlay;
 
     // Appelé quand le moteur est prêt : on y ajoute le bandeau d'appairage et on lance
-    // l'association automatique si aucun token n'est encore enregistré.
+    // l'association automatique si le serveur choisi n'a pas encore de token.
     public override void LoadContent(bool firstLoad)
     {
+        MigrateLegacySettings();
+        _ready = true;
+
         if (_overlay is null && Monocle.Engine.Instance is { } engine)
         {
             _overlay = new PairingOverlay(engine);
@@ -62,6 +92,7 @@ public class DeathTrackerModule : EverestModule
         On.Celeste.Level.Begin -= OnLevelBegin;
         On.Celeste.Level.End   -= OnLevelEnd;
 
+        _ready = false;
         PairingManager.Stop();
         if (_overlay is not null)
         {
@@ -70,13 +101,69 @@ public class DeathTrackerModule : EverestModule
         }
     }
 
-    // Menu du mod : le réglage normal + un bouton pour re-associer le jeu à un autre compte.
+    /// <summary>
+    /// Anciennes versions : une seule adresse (ServerUrl) et un seul token (ApiToken). On range le
+    /// token sous le bon serveur pour que personne n'ait à se ré-associer, puis on vide l'ancien champ.
+    /// </summary>
+    private void MigrateLegacySettings()
+    {
+        var s = Settings;
+        var legacyToken = (s.ApiToken ?? "").Trim();
+        var legacyUrl = (s.ServerUrl ?? "").Trim();
+        if (legacyToken.Length == 0 && legacyUrl.Length == 0)
+            return;
+
+        if (legacyToken.Length > 0)
+        {
+            var isLocal = legacyUrl.Length == 0 || IsLocalUrl(legacyUrl);
+            if (isLocal && s.LocalToken.Trim().Length == 0) s.LocalToken = legacyToken;
+            if (!isLocal && s.ProductionToken.Trim().Length == 0) s.ProductionToken = legacyToken;
+            Logger.Log(LogLevel.Info, "DeathTracker",
+                $"Réglages migrés : ancien token rangé sous « {(isLocal ? "Local" : "Production")} ».");
+        }
+
+        s.ApiToken = "";
+        s.ServerUrl = "";
+        SaveSettings();
+    }
+
+    private static bool IsLocalUrl(string url) =>
+        Uri.TryCreate(url, UriKind.Absolute, out var u) &&
+        (u.IsLoopback || u.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase));
+
+    // ------------------------------------------------------------------ menu
+
+    // Menu du mod, entièrement en français : activation, choix du serveur, état, ré-association.
     public override void CreateModMenuSection(TextMenu menu, bool inGame, FMOD.Studio.EventInstance snapshot)
     {
         CreateModMenuSectionHeader(menu, inGame, snapshot);
-        menu.Add(new TextMenu.Button("Associer ce jeu à un autre compte").Pressed(PairingManager.Reset));
-        base.CreateModMenuSection(menu, inGame, snapshot);
+
+        menu.Add(new TextMenu.OnOff("Envoyer mes morts au serveur", Settings.Enabled).Change(enabled =>
+        {
+            Settings.Enabled = enabled;
+            if (enabled) PairingManager.EnsureStarted();
+            else PairingManager.Stop();
+        }));
+
+        var server = new TextMenu.Option<ServerTarget>("Serveur");
+        server.Add("Production", ServerTarget.Production, Settings.Server == ServerTarget.Production);
+        server.Add("Local (développement)", ServerTarget.Local, Settings.Server == ServerTarget.Local);
+        server.Change(target =>
+        {
+            Settings.Server = target;   // le réglage relance l'association si ce serveur n'a pas de token
+            SaveSettings();
+        });
+        menu.Add(server);
+
+        var active = Settings.Server;
+        var state = TokenFor(active).Length > 0 ? "jeu associé" : "association en attente (voir le bandeau)";
+        menu.Add(new TextMenu.SubHeader($"{NameOf(active)} : {state}"));
+
+        menu.Add(new TextMenu.Button("Associer ce jeu à un autre compte")
+            .Pressed(() => PairingManager.Reset(Settings.Server)));
     }
+
+    // ------------------------------------------------------------------ envoi des événements
 
     private static PlayerDeadBody OnPlayerDie(
         On.Celeste.Player.orig_Die orig,
@@ -90,7 +177,7 @@ public class DeathTrackerModule : EverestModule
         if (!Settings.Enabled || result is null || self.Scene is not Level level)
             return result!;
 
-        _ = PostAsync(DeathsUrl, new DeathEvent
+        _ = PostAsync("/api/ingest/deaths", new DeathEvent
         {
             Timestamp     = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
             Chapter       = level.Session.Area.GetSID(),
@@ -109,7 +196,7 @@ public class DeathTrackerModule : EverestModule
     {
         orig(self);
         if (!Settings.Enabled) return;
-        _ = PostAsync(EventsUrl, new SessionEvent
+        _ = PostAsync("/api/ingest/events", new SessionEvent
         {
             Type      = "session_start",
             Chapter   = self.Session.Area.GetSID(),
@@ -122,7 +209,7 @@ public class DeathTrackerModule : EverestModule
     {
         orig(self);
         if (!Settings.Enabled) return;
-        _ = PostAsync(EventsUrl, new SessionEvent
+        _ = PostAsync("/api/ingest/events", new SessionEvent
         {
             Type      = "session_end",
             Chapter   = self.Session.Area.GetSID(),
@@ -131,13 +218,18 @@ public class DeathTrackerModule : EverestModule
         });
     }
 
-    private static async Task PostAsync<T>(string url, T data)
+    private static async Task PostAsync<T>(string path, T data)
     {
+        // On fige le serveur au moment de l'envoi : si le joueur en change pendant la requête,
+        // la réponse (ex. 401) doit être attribuée à celui qui l'a émise.
+        var target = Settings.Server;
+        var token = TokenFor(target);
+
         // Sans token le serveur répondrait 401 : inutile d'envoyer quoi que ce soit.
-        var token = Settings.ApiToken.Trim();
         if (token.Length == 0)
             return;
 
+        var url = UrlFor(target) + path;
         try
         {
             var json = JsonSerializer.Serialize(data, JsonOptions);
@@ -151,13 +243,14 @@ public class DeathTrackerModule : EverestModule
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
                 // Token révoqué ou supprimé côté site : on l'oublie et on relance l'association.
-                Logger.Log(LogLevel.Warn, "DeathTracker", "Token refusé par le serveur : nouvelle association.");
-                PairingManager.Reset();
+                Logger.Log(LogLevel.Warn, "DeathTracker",
+                    $"Token refusé par le serveur {NameOf(target)} : nouvelle association.");
+                PairingManager.Reset(target);
             }
             else if (!response.IsSuccessStatusCode)
             {
                 Logger.Log(LogLevel.Warn, "DeathTracker",
-                    $"Le serveur a refusé l'envoi ({(int)response.StatusCode}).");
+                    $"Le serveur {NameOf(target)} a refusé l'envoi ({(int)response.StatusCode}).");
             }
         }
         catch (Exception ex)
@@ -167,18 +260,50 @@ public class DeathTrackerModule : EverestModule
     }
 }
 
+/// <summary>
+/// Réglages enregistrés dans Saves/modsettings-CelesteDeathTracker.celeste.
+/// Tout est masqué de l'affichage automatique (SettingIgnore) : le menu est construit à la main
+/// dans CreateModMenuSection, avec des libellés lisibles.
+/// </summary>
 public class DeathTrackerSettings : EverestModuleSettings
 {
-    [SettingName("DEATH_TRACKER_ENABLED")]
+    [SettingIgnore]
     public bool Enabled { get; set; } = true;
 
-    // Adresse du serveur, sans "/api". En production : https://<ton-domaine>
-    [SettingName("DEATH_TRACKER_SERVER_URL")]
-    [SettingMaxLength(200)]
-    public string ServerUrl { get; set; } = "http://localhost:5000";
+    private ServerTarget _server = ServerTarget.Production;
 
-    // Rempli automatiquement par l'association (voir Pairing.cs). Sans token, rien n'est envoyé.
-    // Masqué du menu : plus personne n'a à le saisir. Reste modifiable dans le fichier YAML des réglages.
+    /// <summary>Serveur actif. Production par défaut ; « Local » sert au développement.</summary>
+    [SettingIgnore]
+    public ServerTarget Server
+    {
+        get => _server;
+        set
+        {
+            if (_server == value) return;
+            _server = value;
+            DeathTrackerModule.OnServerChanged();
+        }
+    }
+
+    // Adresses sans "/api". Modifiables dans le fichier YAML si l'adresse change.
+    [SettingIgnore]
+    public string ProductionUrl { get; set; } = "https://celeste.matthisripoche.com";
+
+    [SettingIgnore]
+    public string LocalUrl { get; set; } = "http://localhost:5000";
+
+    // Remplis automatiquement par l'association (voir Pairing.cs). Un token par serveur : passer
+    // de l'un à l'autre ne demande donc pas de se ré-associer.
+    [SettingIgnore]
+    public string ProductionToken { get; set; } = "";
+
+    [SettingIgnore]
+    public string LocalToken { get; set; } = "";
+
+    // Anciennes versions du mod (une seule adresse, un seul token). Lus pour la migration, puis vidés.
+    [SettingIgnore]
+    public string ServerUrl { get; set; } = "";
+
     [SettingIgnore]
     public string ApiToken { get; set; } = "";
 }

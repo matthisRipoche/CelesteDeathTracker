@@ -166,17 +166,20 @@ Les migrations (Flyway) s'appliquent seules au démarrage de l'API : un schéma 
 - Limitation de débit en mémoire : adaptée à **une seule instance** de l'API.
 - Les images GHCR sont **privées** ; `docker login ghcr.io` est refait à chaque déploiement.
 
-## 8. Configurer le mod pour la production
+## 8. Choisir le serveur dans le jeu
 
-`ServerUrl` doit valoir `https://celeste.matthisripoche.com` (sans `/api`) dans
-`<Celeste>/Saves/modsettings-CelesteDeathTracker.celeste` :
-```yaml
-ServerUrl: https://celeste.matthisripoche.com
-ApiToken: ""
-```
-Au lancement suivant, le mod ouvre `https://celeste.matthisripoche.com/pair` et affiche le code.
-Le jeton existant (associé à ta pile locale) n'est pas valable en production : vide `ApiToken`.
-Pour revenir au développement local, remets `http://localhost:5000`.
+Le mod envoie les morts au serveur **Production** par défaut (`https://celeste.matthisripoche.com`).
+Pour le développement local : *Mod Options → Death Tracker → Serveur → Local (développement)*.
+
+- Chaque serveur a **son propre token** : passer de l'un à l'autre ne demande pas de se ré-associer.
+- Au premier passage sur un serveur sans token, le bandeau affiche le code et le navigateur s'ouvre sur
+  la page `/pair` de ce serveur.
+- Le serveur actif est rappelé dans le bandeau (« Death Tracker (Production) : … »).
+- Bouton **Associer ce jeu à un autre compte** : oublie le token du serveur actif et relance l'association.
+
+Les adresses et tokens sont dans `<Celeste>/Saves/modsettings-CelesteDeathTracker.celeste`
+(`ProductionUrl`, `LocalUrl`, `ProductionToken`, `LocalToken`, `Server`).
+Un ancien réglage (`ServerUrl` + `ApiToken`) est migré automatiquement au premier lancement.
 
 ## 9. Ce que la CI ne fait pas
 

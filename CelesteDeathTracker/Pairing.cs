@@ -16,14 +16,15 @@ namespace CelesteDeathTracker;
 internal enum PairingPhase { Idle, Waiting, Paired, Failed }
 
 /// <summary>Photo immuable de l'état d'appairage, lue par l'affichage sans verrou.</summary>
-internal sealed record PairingView(PairingPhase Phase, string UserCode, string Url, string Message, DateTime At);
+internal sealed record PairingView(
+    PairingPhase Phase, string Server, string UserCode, string Url, string Message, DateTime At);
 
 /// <summary>
 /// Associe ce jeu à un compte du site, sans copier-coller (même principe que la connexion d'une TV) :
-///   1. demande un code au serveur et l'affiche dans le jeu ;
+///   1. demande un code au serveur choisi et l'affiche dans le jeu ;
 ///   2. ouvre la page du site, où l'utilisateur connecté saisit ce code et approuve ;
 ///   3. interroge le serveur jusqu'à recevoir le token d'API, puis le range dans ses réglages.
-/// Le token n'est jamais affiché ni écrit dans les logs.
+/// Chaque serveur (Production / Local) a son propre token. Le token n'est jamais affiché ni journalisé.
 /// </summary>
 internal static class PairingManager
 {
@@ -38,21 +39,24 @@ internal static class PairingManager
     private static readonly object Gate = new();
     private static CancellationTokenSource? _cts;
 
-    public static volatile PairingView View = new(PairingPhase.Idle, "", "", "", DateTime.UtcNow);
+    private static readonly PairingView IdleView = new(PairingPhase.Idle, "", "", "", "", DateTime.UtcNow);
+    public static volatile PairingView View = IdleView;
 
-    /// <summary>Démarre l'appairage s'il n'y a pas de token et qu'il n'est pas déjà en cours.</summary>
+    /// <summary>Démarre l'appairage du serveur actif s'il n'a pas de token et qu'il n'est pas en cours.</summary>
     public static void EnsureStarted()
     {
         lock (Gate)
         {
             if (_cts is { IsCancellationRequested: false })
                 return;
-            if (!DeathTrackerModule.Settings.Enabled || HasToken())
+
+            var target = DeathTrackerModule.Settings.Server;
+            if (!DeathTrackerModule.Settings.Enabled || DeathTrackerModule.TokenFor(target).Length > 0)
                 return;
 
             _cts = new CancellationTokenSource();
             var ct = _cts.Token;
-            _ = Task.Run(() => RunAsync(ct), ct);
+            _ = Task.Run(() => RunAsync(target, ct), ct);
         }
     }
 
@@ -65,48 +69,58 @@ internal static class PairingManager
         }
     }
 
-    /// <summary>Oublie le token courant (révoqué, ou demande de l'utilisateur) et recommence.</summary>
-    public static void Reset()
+    public static void ClearView() => View = new PairingView(PairingPhase.Idle, "", "", "", "", DateTime.UtcNow);
+
+    /// <summary>
+    /// Oublie le token d'un serveur (révoqué, ou demande de l'utilisateur). Si c'est le serveur
+    /// actif, une nouvelle association démarre aussitôt.
+    /// </summary>
+    public static void Reset(ServerTarget target)
     {
-        Stop();
-        DeathTrackerModule.Settings.ApiToken = "";
+        DeathTrackerModule.SetToken(target, "");
         DeathTrackerModule.Instance.SaveSettings();
-        EnsureStarted();
+
+        if (DeathTrackerModule.Settings.Server == target)
+        {
+            Stop();
+            ClearView();
+            EnsureStarted();
+        }
     }
 
-    private static bool HasToken() => !string.IsNullOrWhiteSpace(DeathTrackerModule.Settings.ApiToken);
-
-    private static async Task RunAsync(CancellationToken ct)
+    private static async Task RunAsync(ServerTarget target, CancellationToken ct)
     {
+        var name = DeathTrackerModule.NameOf(target);
         var browserOpened = false;
         try
         {
-            while (!ct.IsCancellationRequested && !HasToken())
+            while (!ct.IsCancellationRequested && DeathTrackerModule.TokenFor(target).Length == 0)
             {
                 StartResponse? start;
                 try
                 {
-                    start = await PostAsync<StartResponse>("/api/pairing/start",
+                    start = await PostAsync<StartResponse>(target, "/api/pairing/start",
                         new { deviceName = Environment.MachineName }, ct).ConfigureAwait(false);
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
                 {
-                    Fail("Serveur injoignable, nouvelle tentative…", ex.Message);
+                    Fail(name, "Serveur injoignable, nouvelle tentative…", ex.Message);
                     await Task.Delay(TimeSpan.FromSeconds(15), ct).ConfigureAwait(false);
                     continue;
                 }
 
                 if (start is null || string.IsNullOrEmpty(start.DeviceCode) || string.IsNullOrEmpty(start.UserCode))
                 {
-                    Fail("Réponse inattendue du serveur.", "start: réponse vide");
+                    Fail(name, "Réponse inattendue du serveur.", "start : réponse vide");
                     await Task.Delay(TimeSpan.FromSeconds(30), ct).ConfigureAwait(false);
                     continue;
                 }
 
-                View = new PairingView(PairingPhase.Waiting, start.UserCode, start.VerificationUrl ?? "", "", DateTime.UtcNow);
-                Logger.Log(LogLevel.Info, "DeathTracker", $"Appairage : saisis le code {start.UserCode} sur {start.VerificationUrl}");
+                View = new PairingView(PairingPhase.Waiting, name, start.UserCode, start.VerificationUrl ?? "", "", DateTime.UtcNow);
+                Logger.Log(LogLevel.Info, "DeathTracker",
+                    $"Appairage ({name}) : saisis le code {start.UserCode} sur {start.VerificationUrl}");
 
-                // Une seule ouverture du navigateur par lancement du jeu : pas de fenêtres en rafale.
+                // Une seule ouverture du navigateur par tentative : pas de fenêtres en rafale.
                 if (!browserOpened)
                     browserOpened = TryOpenBrowser(start.VerificationUrl);
 
@@ -121,7 +135,7 @@ internal static class PairingManager
                     PollResponse? poll;
                     try
                     {
-                        poll = await PostAsync<PollResponse>("/api/pairing/poll",
+                        poll = await PostAsync<PollResponse>(target, "/api/pairing/poll",
                             new { deviceCode = start.DeviceCode }, ct).ConfigureAwait(false);
                     }
                     catch (Exception ex) when (ex is not OperationCanceledException)
@@ -133,14 +147,16 @@ internal static class PairingManager
                     switch (poll?.Status)
                     {
                         case "approved" when !string.IsNullOrEmpty(poll.Token):
-                            DeathTrackerModule.Settings.ApiToken = poll.Token;
+                            // Le token est rangé sous le serveur qui l'a émis, même si le joueur
+                            // a changé de serveur entre-temps.
+                            DeathTrackerModule.SetToken(target, poll.Token);
                             DeathTrackerModule.Instance.SaveSettings();
-                            View = new PairingView(PairingPhase.Paired, "", "", "", DateTime.UtcNow);
-                            Logger.Log(LogLevel.Info, "DeathTracker", "Jeu associé au compte.");
+                            View = new PairingView(PairingPhase.Paired, name, "", "", "", DateTime.UtcNow);
+                            Logger.Log(LogLevel.Info, "DeathTracker", $"Jeu associé au compte ({name}).");
                             return;
 
                         case "denied":
-                            Fail("Association refusée sur le site.", "refusée par l'utilisateur");
+                            Fail(name, "Association refusée sur le site.", "refusée par l'utilisateur");
                             await Task.Delay(TimeSpan.FromSeconds(60), ct).ConfigureAwait(false);
                             restart = true;
                             break;
@@ -154,17 +170,17 @@ internal static class PairingManager
         }
         catch (OperationCanceledException)
         {
-            // arrêt normal (déchargement du mod)
+            // arrêt normal (changement de serveur, déchargement du mod)
         }
         catch (Exception ex)
         {
-            Fail("Erreur d'association.", ex.ToString());
+            Fail(name, "Erreur d'association.", ex.ToString());
         }
     }
 
-    private static async Task<T?> PostAsync<T>(string path, object body, CancellationToken ct)
+    private static async Task<T?> PostAsync<T>(ServerTarget target, string path, object body, CancellationToken ct)
     {
-        var url = DeathTrackerModule.BaseUrl + path;
+        var url = DeathTrackerModule.UrlFor(target) + path;
         using var request = new HttpRequestMessage(HttpMethod.Post, url)
         {
             Content = new StringContent(JsonSerializer.Serialize(body, Json), Encoding.UTF8, "application/json")
@@ -175,10 +191,16 @@ internal static class PairingManager
         return JsonSerializer.Deserialize<T>(text, Json);
     }
 
-    private static void Fail(string message, string detail)
+    private static void Fail(string server, string message, string detail)
     {
-        View = new PairingView(PairingPhase.Failed, "", "", message, DateTime.UtcNow);
-        Logger.Log(LogLevel.Warn, "DeathTracker", $"Appairage : {message} ({detail})");
+        var previous = View;
+        // Même échec qu'au tour précédent : on garde l'heure d'origine, sinon le bandeau
+        // clignoterait à chaque nouvelle tentative (serveur local éteint, par exemple).
+        var at = previous.Phase == PairingPhase.Failed && previous.Message == message && previous.Server == server
+            ? previous.At
+            : DateTime.UtcNow;
+        View = new PairingView(PairingPhase.Failed, server, "", "", message, at);
+        Logger.Log(LogLevel.Warn, "DeathTracker", $"Appairage ({server}) : {message} ({detail})");
     }
 
     private static bool TryOpenBrowser(string? url)
@@ -213,6 +235,7 @@ internal static class PairingManager
 internal sealed class PairingOverlay : DrawableGameComponent
 {
     private static readonly TimeSpan PairedBannerDuration = TimeSpan.FromSeconds(6);
+    private static readonly TimeSpan FailedBannerDuration = TimeSpan.FromSeconds(8);
 
     public PairingOverlay(Game game) : base(game)
     {
@@ -224,20 +247,21 @@ internal sealed class PairingOverlay : DrawableGameComponent
         var view = PairingManager.View;
         string? title = null, line = null, code = null;
         var color = Color.White;
+        var age = DateTime.UtcNow - view.At;
 
         switch (view.Phase)
         {
             case PairingPhase.Waiting:
-                title = "Death Tracker : associe ce jeu à ton compte";
+                title = $"Death Tracker ({view.Server}) : associe ce jeu à ton compte";
                 line = $"Sur {ShortUrl(view.Url)}, connecte-toi puis saisis ce code :";
                 code = view.UserCode;
                 break;
-            case PairingPhase.Paired when DateTime.UtcNow - view.At < PairedBannerDuration:
-                title = "Death Tracker : jeu associé à ton compte";
+            case PairingPhase.Paired when age < PairedBannerDuration:
+                title = $"Death Tracker ({view.Server}) : jeu associé à ton compte";
                 color = Color.LightGreen;
                 break;
-            case PairingPhase.Failed:
-                title = "Death Tracker : " + view.Message;
+            case PairingPhase.Failed when age < FailedBannerDuration:
+                title = $"Death Tracker ({view.Server}) : {view.Message}";
                 color = Color.Orange;
                 break;
         }
@@ -250,6 +274,7 @@ internal sealed class PairingOverlay : DrawableGameComponent
         var x = (1920f - width) / 2f;
         const float y = 20f;
 
+        // "Monocle.Draw" : dans cette classe, "Draw" seul désignerait la méthode ci-dessus.
         Monocle.Draw.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp,
             DepthStencilState.None, RasterizerState.CullNone, null, Engine.ScreenMatrix);
 
