@@ -73,7 +73,8 @@ services:
       traefik.http.routers.celeste.rule: Host(`${DOMAIN}`)
       traefik.http.routers.celeste.entrypoints: ${TRAEFIK_ENTRYPOINT:-websecure}
       traefik.http.routers.celeste.tls: "true"
-      traefik.http.routers.celeste.tls.certresolver: ${TRAEFIK_CERTRESOLVER:-letsencrypt}
+      # "ovhcloud" : resolver de TON Traefik (défi DNS chez OVH), relevé sur les labels de portfolio-next
+      traefik.http.routers.celeste.tls.certresolver: ${TRAEFIK_CERTRESOLVER:-ovhcloud}
       traefik.http.routers.celeste.middlewares: celeste-headers
       traefik.http.services.celeste.loadbalancer.server.port: "80"
 

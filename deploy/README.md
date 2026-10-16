@@ -28,9 +28,12 @@ Aucun port n'est publié sur l'hôte : l'API et la base ne sont joignables par a
 
 ## 1. Une seule fois : récupérer les noms de ton Traefik
 
-Les labels de `docker-compose.prod.yml` utilisent des valeurs par défaut (`websecure`, `letsencrypt`,
-réseau `frontend`). Elles doivent correspondre à **ta** configuration. Regarde comment une application
-déjà en ligne se déclare :
+> **Déjà relevé sur ton serveur** (labels de `portfolio-next`) : entrypoint HTTPS `websecure`,
+> entrypoint HTTP `web`, certresolver **`ovhcloud`** (défi DNS OVH). Ce sont les valeurs par défaut de
+> `docker-compose.prod.yml`. Cette étape ne sert plus qu'à les revérifier si ton Traefik change.
+
+Les labels de `docker-compose.prod.yml` doivent correspondre à **ta** configuration Traefik. Regarde
+comment une application déjà en ligne se déclare :
 
 ```bash
 docker inspect portfolio-next --format '{{range $k,$v := .Config.Labels}}{{$k}}={{$v}}{{"\n"}}{{end}}' | grep traefik
@@ -54,10 +57,10 @@ nano /opt/celeste/.env
 DOMAIN=celeste.matthisripoche.com
 POSTGRES_PASSWORD=<généré ci-dessous>
 
-# Valeurs relevées à l'étape 1 (ces défauts sont utilisés si tu les omets)
+# Valeurs de ton Traefik (ce sont aussi les défauts du compose, tu peux les omettre)
 TRAEFIK_NETWORK=frontend
 TRAEFIK_ENTRYPOINT=websecure
-TRAEFIK_CERTRESOLVER=letsencrypt
+TRAEFIK_CERTRESOLVER=ovhcloud
 ```
 Générer le mot de passe **sur le serveur** (il ne doit passer ni par un chat ni par Git) :
 ```bash
