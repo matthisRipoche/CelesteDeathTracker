@@ -2,3 +2,5 @@ node_modules/
 dist/
 .angular/
 .git
+# Assets du jeu (copyright) : ne doivent jamais entrer dans l'image publique
+public/local-assets/

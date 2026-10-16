@@ -1,0 +1,448 @@
+<header class="ds-topbar">
+  <span class="ds-topbar__brand">
+    <svg width="26" height="22" viewBox="0 0 13 11" shape-rendering="crispEdges" aria-hidden="true">
+      <path fill="var(--ds-lavender-500)" d="M0 11 6 0 8 4 9 3 13 11Z" />
+      <path fill="var(--ds-ice-300)" d="M6 0 7 2 5 2Z" />
+    </svg>
+    Death Tracker
+  </span>
+  <nav class="ds-nav" aria-label="Exemple de navigation">
+    <a class="ds-nav__link" href="#exemple" aria-current="page">Tableau de bord</a>
+    <a class="ds-nav__link" href="#exemple">Appareils</a>
+    <a class="ds-nav__link" href="#exemple">Associer un jeu</a>
+  </nav>
+  <span class="ds-topbar__spacer"></span>
+  <span class="ds-badge ds-badge--warning">Design system · local uniquement</span>
+</header>
+
+<div class="shell">
+  <aside class="index" aria-label="Sommaire">
+    <p class="ds-card__title">Basecamp</p>
+    <ul>
+      @for (s of sections; track s[0]) {
+        <li><a [href]="'#' + s[0]">{{ s[1] }}</a></li>
+      }
+    </ul>
+  </aside>
+
+  <main class="content">
+    <!-- ================= Principes ================= -->
+    <section id="principes">
+      <h1 class="ds-pixel title">Basecamp</h1>
+      <p class="lead">
+        Le système de design de Celeste Death Tracker. Une interface sombre et nette, posée sur la
+        palette du jeu : lavande et givre de la montagne, rose du dash, rouge de la fraise.
+      </p>
+      <div class="ds-grid ds-grid--auto principles">
+        <div class="ds-card">
+          <h3>Lisible avant tout</h3>
+          <p class="ds-muted">Contrastes AA minimum, textes jamais en dessous de 12 px, focus toujours visible.</p>
+        </div>
+        <div class="ds-card">
+          <h3>Pixel, avec parcimonie</h3>
+          <p class="ds-muted">
+            La police pixel est réservée aux chiffres et aux codes. Le texte courant reste en sans-serif.
+          </p>
+        </div>
+        <div class="ds-card">
+          <h3>Franc et tactile</h3>
+          <p class="ds-muted">Angles nets, ombres dures, boutons qui s'enfoncent : l'interface se « sent » sous le doigt.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= Couleurs ================= -->
+    <section id="couleurs">
+      <h2>Couleurs</h2>
+      <p class="ds-muted">
+        Échantillonnées sur les sprites du jeu. On n'utilise jamais la palette brute dans un composant :
+        uniquement les jetons sémantiques (<code>--color-*</code>).
+      </p>
+
+      <h3>Nuit</h3>
+      <div class="swatches">
+        @for (s of night; track s.token) {
+          <div class="swatch">
+            <span class="chip" [style.background]="'var(' + s.token + ')'"></span>
+            <code>{{ s.token.replace('--ds-', '') }}</code><span class="hex">{{ s.hex }}</span>
+            @if (s.note) { <small class="ds-muted">{{ s.note }}</small> }
+          </div>
+        }
+      </div>
+
+      <h3>Lavande</h3>
+      <div class="swatches">
+        @for (s of lavender; track s.token) {
+          <div class="swatch">
+            <span class="chip" [style.background]="'var(' + s.token + ')'"></span>
+            <code>{{ s.token.replace('--ds-', '') }}</code><span class="hex">{{ s.hex }}</span>
+            @if (s.note) { <small class="ds-muted">{{ s.note }}</small> }
+          </div>
+        }
+      </div>
+
+      <h3>Accents</h3>
+      <div class="swatches">
+        @for (s of accents; track s.token) {
+          <div class="swatch">
+            <span class="chip" [style.background]="'var(' + s.token + ')'"></span>
+            <code>{{ s.token.replace('--ds-', '') }}</code><span class="hex">{{ s.hex }}</span>
+            @if (s.note) { <small class="ds-muted">{{ s.note }}</small> }
+          </div>
+        }
+      </div>
+
+      <h3>Jetons sémantiques</h3>
+      <div class="swatches">
+        @for (s of semantic; track s.token) {
+          <div class="swatch">
+            <span class="chip" [style.background]="'var(' + s.token + ')'"></span>
+            <code>{{ s.token }}</code><span class="hex">{{ s.hex }}</span>
+          </div>
+        }
+      </div>
+    </section>
+
+    <!-- ================= Typographie ================= -->
+    <section id="typographie">
+      <h2>Typographie</h2>
+      <p class="ds-muted">
+        <strong>Outfit</strong> pour le texte (géométrique, proche de la police du jeu, licence OFL) et
+        <strong>Pixelify Sans</strong> pour les chiffres, codes et titres de marque (licence OFL).
+        Les deux sont hébergées avec le site : aucune requête vers un service externe.
+      </p>
+      <div class="ds-card type-specimen">
+        <p class="ds-pixel" style="font-size: var(--text-3xl)">35 507 morts</p>
+        <h1 style="font-size: var(--text-2xl)">Titre de page</h1>
+        <h2 style="font-size: var(--text-xl)">Titre de section</h2>
+        <h3 style="font-size: var(--text-lg)">Titre de bloc</h3>
+        <p>Texte courant : la room b-05 de Summit est la plus meurtrière cette semaine.</p>
+        <p class="ds-muted" style="font-size: var(--text-sm)">Texte secondaire : dernière mise à jour il y a 3 secondes.</p>
+        <p style="font-size: var(--text-xs)" class="ds-muted">Légende ou aide, 12 px minimum.</p>
+      </div>
+    </section>
+
+    <!-- ================= Forme ================= -->
+    <section id="forme">
+      <h2>Espacement et forme</h2>
+      <div class="ds-grid ds-grid--auto">
+        <div class="ds-card">
+          <p class="ds-card__title">Échelle d'espacement (base 4 px)</p>
+          <div class="spacing">
+            @for (n of spacing; track n) {
+              <div class="spacing__row">
+                <code>--space-{{ n }}</code>
+                <span class="spacing__bar" [style.width]="'var(--space-' + n + ')'"></span>
+              </div>
+            }
+          </div>
+        </div>
+        <div class="ds-card">
+          <p class="ds-card__title">Angles et ombres</p>
+          <div class="ds-row">
+            <span class="shape" style="border-radius: var(--radius-sm)">2 px</span>
+            <span class="shape" style="border-radius: var(--radius-md)">4 px</span>
+            <span class="shape" style="border-radius: var(--radius-lg)">8 px</span>
+          </div>
+          <p class="ds-muted" style="margin-top: var(--space-4)">
+            Ombre dure, décalée vers le bas, sans flou : c'est ce qui donne le relief « pixel ».
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= Boutons ================= -->
+    <section id="boutons">
+      <h2>Boutons</h2>
+      <div class="ds-card ds-stack">
+        <div class="ds-row">
+          <button class="ds-btn ds-btn--primary" type="button">Autoriser</button>
+          <button class="ds-btn" type="button">Secondaire</button>
+          <button class="ds-btn ds-btn--ghost" type="button">Discret</button>
+          <button class="ds-btn ds-btn--danger" type="button">Révoquer</button>
+        </div>
+        <div class="ds-row">
+          <button class="ds-btn ds-btn--primary ds-btn--sm" type="button">Petit</button>
+          <button class="ds-btn ds-btn--primary" type="button">Normal</button>
+          <button class="ds-btn ds-btn--primary ds-btn--lg" type="button">Grand</button>
+        </div>
+        <div class="ds-row">
+          <button class="ds-btn ds-btn--primary" type="button" disabled>Désactivé</button>
+          <button
+            class="ds-btn ds-btn--primary"
+            type="button"
+            [class.is-loading]="loading()"
+            [attr.aria-busy]="loading()"
+            (click)="demoLoading()"
+          >
+            {{ loading() ? 'Association…' : 'Simuler un chargement' }}
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= Formulaires ================= -->
+    <section id="formulaires">
+      <h2>Formulaires</h2>
+      <div class="ds-grid ds-grid--auto">
+        <div class="ds-card ds-stack">
+          <div class="ds-field">
+            <label class="ds-label" for="demo-email">Email</label>
+            <input id="demo-email" class="ds-input" type="email" placeholder="toi@exemple.fr" />
+            <span class="ds-hint">Utilisé uniquement pour te connecter.</span>
+          </div>
+          <div class="ds-field">
+            <label class="ds-label" for="demo-pass">Mot de passe</label>
+            <input id="demo-pass" class="ds-input" type="password" aria-invalid="true" value="abc" />
+            <span class="ds-error">8 caractères minimum.</span>
+          </div>
+        </div>
+        <div class="ds-card ds-stack">
+          <div class="ds-field">
+            <label class="ds-label" for="demo-code">Code affiché dans le jeu</label>
+            <input
+              id="demo-code"
+              class="ds-input ds-input--code"
+              type="text"
+              maxlength="9"
+              placeholder="XXXX-XXXX"
+              autocomplete="off"
+              [attr.aria-invalid]="codeInvalid()"
+              [value]="codeValue()"
+              (input)="onCode($event)"
+            />
+            @if (codeInvalid()) {
+              <span class="ds-error">Le code comporte 8 caractères.</span>
+            } @else {
+              <span class="ds-hint">Saisi à la main : jamais pré-rempli par un lien.</span>
+            }
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= Cartes ================= -->
+    <section id="cartes">
+      <h2>Cartes et indicateurs</h2>
+      <div class="ds-grid ds-grid--auto">
+        <div class="ds-card">
+          <div class="ds-stat">
+            <span class="ds-stat__label">Morts enregistrées</span>
+            <span class="ds-stat__value ds-stat__value--danger">35 507</span>
+            <span class="ds-stat__delta">+128 aujourd'hui</span>
+          </div>
+        </div>
+        <div class="ds-card">
+          <div class="ds-stat">
+            <span class="ds-stat__label">Rooms touchées</span>
+            <span class="ds-stat__value">214</span>
+            <span class="ds-stat__delta">sur 9 chapitres</span>
+          </div>
+        </div>
+        <div class="ds-card ds-card--accent">
+          <div class="ds-stat">
+            <span class="ds-stat__label">Série en cours</span>
+            <span class="ds-stat__value">17</span>
+            <span class="ds-stat__delta">morts dans la même room</span>
+          </div>
+        </div>
+      </div>
+      <div class="ds-row badges">
+        <span class="ds-badge">Neutre</span>
+        <span class="ds-badge ds-badge--accent">Actif</span>
+        <span class="ds-badge ds-badge--info">Production</span>
+        <span class="ds-badge ds-badge--success">Associé</span>
+        <span class="ds-badge ds-badge--warning">En attente</span>
+        <span class="ds-badge ds-badge--danger">Révoqué</span>
+      </div>
+    </section>
+
+    <!-- ================= Données ================= -->
+    <section id="donnees">
+      <h2>Données</h2>
+      <div class="ds-grid ds-grid--auto">
+        <div class="ds-card">
+          <p class="ds-card__title">Rooms les plus meurtrières</p>
+          @for (r of rooms; track r.label) {
+            <div class="ds-bar-row">
+              <span class="ds-bar-row__label" [title]="r.label">{{ r.label }}</span>
+              <div class="ds-bar" role="img" [attr.aria-label]="r.count + ' morts'">
+                <div class="ds-bar__fill" [style.width.%]="(r.count / maxRoom) * 100"></div>
+              </div>
+              <span class="ds-bar-row__value">{{ r.count }}</span>
+            </div>
+          }
+        </div>
+        <div class="ds-card">
+          <p class="ds-card__title">Dernières morts</p>
+          <div class="ds-table-wrap">
+            <table class="ds-table">
+              <thead>
+                <tr><th>Heure</th><th>Mod</th><th>Room</th><th class="is-num">X</th><th class="is-num">Y</th></tr>
+              </thead>
+              <tbody>
+                @for (d of deaths; track d.time) {
+                  <tr>
+                    <td>{{ d.time }}</td><td>{{ d.mod }}</td><td>{{ d.room }}</td>
+                    <td class="is-num">{{ d.x }}</td><td class="is-num">{{ d.y }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= Retours ================= -->
+    <section id="retours">
+      <h2>Retours et états</h2>
+      <div class="ds-stack">
+        <div class="ds-alert ds-alert--success" role="status">
+          <span class="ds-alert__icon" aria-hidden="true">✓</span>
+          <div><p class="ds-alert__title">Jeu associé</p><p class="ds-muted">Tes morts arrivent maintenant sur ton compte.</p></div>
+        </div>
+        <div class="ds-alert" role="status">
+          <span class="ds-alert__icon" aria-hidden="true">i</span>
+          <div><p class="ds-alert__title">Serveur : Production</p><p class="ds-muted">Change de serveur dans les options du mod.</p></div>
+        </div>
+        <div class="ds-alert ds-alert--warning" role="alert">
+          <span class="ds-alert__icon" aria-hidden="true">!</span>
+          <div><p class="ds-alert__title">Autorise seulement si c'est toi</p><p class="ds-muted">Cet appareil pourra envoyer des morts sur ton compte.</p></div>
+        </div>
+        <div class="ds-alert ds-alert--danger" role="alert">
+          <span class="ds-alert__icon" aria-hidden="true">×</span>
+          <div><p class="ds-alert__title">API injoignable</p><p class="ds-muted">Vérifie que le serveur tourne.</p></div>
+        </div>
+      </div>
+
+      <div class="ds-grid ds-grid--auto states">
+        <div class="ds-empty">
+          <span class="ds-pixel" style="font-size: var(--text-3xl)" aria-hidden="true">0</span>
+          <p class="ds-empty__title">Aucune mort pour l'instant</p>
+          <p>Lance Celeste et associe ton jeu : tes morts apparaîtront ici.</p>
+          <button class="ds-btn ds-btn--primary" type="button">Associer un jeu</button>
+        </div>
+        <div class="ds-card ds-stack" aria-busy="true" aria-label="Chargement">
+          <div class="ds-skeleton" style="width: 40%"></div>
+          <div class="ds-skeleton" style="height: 2.5rem; width: 65%"></div>
+          <div class="ds-skeleton"></div>
+          <div class="ds-skeleton" style="width: 80%"></div>
+        </div>
+        <div class="ds-stack" style="align-content: start">
+          <p class="ds-muted">Code d'association</p>
+          <span class="ds-code" aria-label="Code K7QM tiret 4XRD">K7QM-4XRD</span>
+          <span class="ds-toast"><span class="ds-alert__icon" style="color: var(--color-success)">✓</span> Copié dans le presse-papiers</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= Navigation ================= -->
+    <section id="navigation">
+      <h2>Navigation</h2>
+      <p class="ds-muted">
+        Une barre en haut sur ordinateur (marque, trois liens, compte), remplacée par une barre
+        en bas au pouce sur mobile. Pas de menu hamburger : trois destinations tiennent à l'écran.
+      </p>
+
+      <div class="ds-card ds-stack">
+        <p class="ds-card__title">Onglets (périodes)</p>
+        <div class="ds-tabs" role="tablist" aria-label="Période">
+          @for (p of ['jour', 'semaine', 'total']; track p) {
+            <button
+              class="ds-tab"
+              type="button"
+              role="tab"
+              [attr.aria-selected]="period() === p"
+              (click)="period.set($any(p))"
+            >
+              {{ p === 'jour' ? "Aujourd'hui" : p === 'semaine' ? 'Cette semaine' : 'Total' }}
+            </button>
+          }
+        </div>
+        <p class="ds-muted">Période sélectionnée : <strong>{{ period() }}</strong></p>
+      </div>
+
+      <div class="ds-card ds-stack mobile-demo">
+        <p class="ds-card__title">Barre du bas (mobile)</p>
+        <nav class="ds-tabbar" aria-label="Navigation mobile (exemple)">
+          <a class="ds-tabbar__item" href="#navigation" aria-current="page">
+            <svg width="22" height="22" viewBox="0 0 11 11" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true"><path d="M0 11 5 1 6 3 7 2 11 11Z"/></svg>
+            Accueil
+          </a>
+          <a class="ds-tabbar__item" href="#navigation">
+            <svg width="22" height="22" viewBox="0 0 11 11" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true"><path d="M1 2h9v6H1zM3 9h5v1H3z"/></svg>
+            Appareils
+          </a>
+          <a class="ds-tabbar__item" href="#navigation">
+            <svg width="22" height="22" viewBox="0 0 11 11" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true"><path d="M5 1h1v4h4v1H6v4H5V6H1V5h4z"/></svg>
+            Associer
+          </a>
+        </nav>
+      </div>
+    </section>
+
+    <!-- ================= Exemple ================= -->
+    <section id="exemple">
+      <h2>Exemple de page</h2>
+      <p class="ds-muted">Le tableau de bord recomposé uniquement avec les composants ci-dessus.</p>
+      <div class="example">
+        <div class="ds-grid ds-grid--auto">
+          <div class="ds-card"><div class="ds-stat"><span class="ds-stat__label">Morts</span><span class="ds-stat__value ds-stat__value--danger">1 284</span></div></div>
+          <div class="ds-card"><div class="ds-stat"><span class="ds-stat__label">Aujourd'hui</span><span class="ds-stat__value">57</span></div></div>
+          <div class="ds-card"><div class="ds-stat"><span class="ds-stat__label">Rooms</span><span class="ds-stat__value">38</span></div></div>
+        </div>
+        <div class="ds-card">
+          <p class="ds-card__title">Rooms les plus meurtrières</p>
+          @for (r of rooms.slice(0, 3); track r.label) {
+            <div class="ds-bar-row">
+              <span class="ds-bar-row__label">{{ r.label }}</span>
+              <div class="ds-bar"><div class="ds-bar__fill ds-bar__fill--info" [style.width.%]="(r.count / maxRoom) * 100"></div></div>
+              <span class="ds-bar-row__value">{{ r.count }}</span>
+            </div>
+          }
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= Assets du jeu ================= -->
+    <section id="assets">
+      <h2>Assets du jeu <span class="ds-badge ds-badge--warning">local uniquement</span></h2>
+      <div class="ds-alert ds-alert--warning" role="note">
+        <span class="ds-alert__icon" aria-hidden="true">!</span>
+        <div>
+          <p class="ds-alert__title">Contenu protégé par le droit d'auteur</p>
+          <p class="ds-muted">
+            Ces sprites sont extraits du jeu (© Extremely OK Games). Ils ne servent qu'à
+            s'inspirer en local : le dossier <code>public/local-assets/</code> est exclu de Git et de
+            l'image Docker. Ne pas les publier sur le site en ligne.
+          </p>
+        </div>
+      </div>
+
+      @if (spritesMissing()) {
+        <div class="ds-empty">
+          <p class="ds-empty__title">Sprites non trouvés</p>
+          <p>Le dossier <code>web/public/local-assets/celeste/</code> est vide ou absent sur cette machine.</p>
+        </div>
+      }
+
+      <div class="sprites">
+        @for (s of sprites; track s.file) {
+          <figure>
+            <div class="sprite-box">
+              <img
+                class="ds-sprite"
+                [src]="'local-assets/celeste/' + s.file + '.png'"
+                [style.zoom]="s.scale"
+                [alt]="s.label"
+                (error)="onSpriteError()"
+              />
+            </div>
+            <figcaption class="ds-muted">{{ s.label }}</figcaption>
+          </figure>
+        }
+      </div>
+    </section>
+  </main>
+</div>

@@ -28,6 +28,8 @@
               }
             ],
             "styles": [
+              "node_modules/@fontsource-variable/outfit/index.css",
+              "node_modules/@fontsource-variable/pixelify-sans/index.css",
               "src/styles.css"
             ]
           },
@@ -45,7 +47,22 @@
                   "maximumError": "8kB"
                 }
               ],
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "fileReplacements": [
+                {
+                  "replace": "src/app/dev-routes.ts",
+                  "with": "src/app/dev-routes.prod.ts"
+                }
+              ],
+              "assets": [
+                {
+                  "glob": "**/*",
+                  "input": "public",
+                  "ignore": [
+                    "local-assets/**"
+                  ]
+                }
+              ]
             },
             "development": {
               "optimization": false,
@@ -88,6 +105,8 @@
               }
             ],
             "styles": [
+              "node_modules/@fontsource-variable/outfit/index.css",
+              "node_modules/@fontsource-variable/pixelify-sans/index.css",
               "src/styles.css"
             ],
             "karmaConfig": "karma.conf.js"

@@ -31,3 +31,6 @@ dashboard-legacy/deaths.json
 .DS_Store
 Thumbs.db
 *.log
+
+# Assets extraits du jeu Celeste (© Extremely OK Games) : usage local uniquement, jamais versionnés
+web/public/local-assets/

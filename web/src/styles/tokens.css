@@ -1,0 +1,115 @@
+/*
+ * Design tokens — « Basecamp »
+ *
+ * Palette échantillonnée sur les sprites du jeu (logo lavande et glace, fraise, cristal de dash,
+ * cœurs) puis reformulée en échelles. Aucune image du jeu n'est utilisée en production :
+ * seules des valeurs de couleur, qui ne sont pas protégées, en sont dérivées.
+ *
+ * Deux niveaux : la palette brute (--ds-*) ne s'emploie jamais directement dans un composant ;
+ * on passe par les jetons sémantiques (--color-*), ce qui permet de changer de thème sans
+ * toucher aux composants.
+ */
+:root {
+  /* ---------- Palette brute ---------- */
+  --ds-night-950: #0e0c1d;
+  --ds-night-900: #151229;
+  --ds-night-800: #1d1938;
+  --ds-night-700: #2a2450;
+  --ds-night-600: #3b3470;
+
+  --ds-lavender-200: #e2defa;
+  --ds-lavender-300: #c9c4ee;
+  --ds-lavender-400: #9d97d1;   /* logo */
+  --ds-lavender-500: #8479c5;   /* logo */
+  --ds-lavender-700: #675c83;   /* logo */
+
+  --ds-ice-300: #a6dcee;
+  --ds-ice-400: #66c4e1;        /* givre du logo */
+
+  --ds-pink-400: #f8588c;       /* dash à une charge */
+  --ds-pink-500: #f73e7b;
+  --ds-orange-400: #f68134;     /* dash */
+
+  --ds-strawberry-500: #ed4a44; /* fraise */
+  --ds-strawberry-700: #a81824;
+
+  --ds-green-400: #93bd40;      /* cristal de dash */
+  --ds-green-600: #208020;
+
+  --ds-gold-400: #f2c230;       /* dérivé de la fraise dorée */
+  --ds-gold-600: #b38805;
+
+  --ds-snow: #f5f2ff;
+
+  /* ---------- Sémantique : thème sombre (par défaut) ---------- */
+  --color-bg: var(--ds-night-950);
+  --color-surface: var(--ds-night-900);
+  --color-surface-raised: var(--ds-night-800);
+  --color-surface-sunken: #0a0916;
+  --color-border: var(--ds-night-600);
+  --color-border-strong: var(--ds-lavender-700);
+
+  --color-text: var(--ds-snow);
+  --color-text-muted: var(--ds-lavender-400);
+  --color-text-faint: var(--ds-lavender-700);
+  --color-on-accent: var(--ds-night-950);
+
+  --color-accent: var(--ds-pink-400);
+  --color-accent-hover: var(--ds-pink-500);
+  --color-accent-soft: rgb(248 88 140 / 0.14);
+
+  --color-info: var(--ds-ice-400);
+  --color-success: var(--ds-green-400);
+  --color-warning: var(--ds-gold-400);
+  --color-danger: var(--ds-strawberry-500);
+  --color-focus: var(--ds-ice-300);
+
+  /* ---------- Typographie ---------- */
+  --font-sans: 'Outfit Variable', 'Segoe UI', system-ui, sans-serif;
+  --font-pixel: 'Pixelify Sans Variable', 'Consolas', monospace;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.625rem;
+  --text-2xl: 2.25rem;
+  --text-3xl: 3.25rem;
+
+  --leading-tight: 1.15;
+  --leading-normal: 1.5;
+
+  /* ---------- Espacement (base 4 px) ---------- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+
+  /* ---------- Forme : angles francs, ombres « pixel » franches ---------- */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
+  --border-width: 2px;
+
+  --shadow-hard: 0 3px 0 rgb(0 0 0 / 0.45);
+  --shadow-hard-lg: 0 5px 0 rgb(0 0 0 / 0.45);
+  --shadow-glow: 0 0 0 3px var(--color-accent-soft);
+
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --duration-fast: 120ms;
+  --duration: 200ms;
+
+  --content-width: 1120px;
+  --topbar-height: 60px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration: 0ms;
+  }
+}
