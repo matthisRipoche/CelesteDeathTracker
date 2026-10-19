@@ -5,7 +5,8 @@ description: Méthode de commit du projet CelesteDeathTracker (Conventional Comm
 
 # Commiter dans CelesteDeathTracker
 
-Ne commiter que sur demande explicite de l'utilisateur. Ne jamais pousser (`git push`) sans qu'il le demande.
+Ne commiter que sur demande explicite de l'utilisateur. Ne jamais pousser (`git push`) sans son accord :
+après chaque série de commits, lui **demander** s'il faut pousser (étape 7), et attendre sa réponse.
 
 ## 1. Examiner avant de commiter
 
@@ -110,5 +111,16 @@ git log --oneline -<n>
 ```
 
 Rendre compte à l'utilisateur : la liste des commits créés (hash + message), les vérifications
-lancées et leur résultat, et ce qui a été volontairement laissé hors commit. Proposer ensuite de
-pousser, sans le faire.
+lancées et leur résultat, et ce qui a été volontairement laissé hors commit.
+
+## 7. Demander pour le push
+
+À la fin de **chaque** commit (ou série de commits), poser la question « On pousse ? » à
+l'utilisateur (`AskUserQuestion` : oui / non), en indiquant la branche et le nombre de commits en
+avance sur le distant (`git status -sb`).
+
+- **Oui** → `git push` (ou `git push -u origin <branche>` si la branche n'a pas de distant).
+  Ne jamais utiliser `--force`.
+- **Non** → ne rien pousser, et ne pas reposer la question avant le prochain commit.
+- Si aucun remote n'est configuré (`git remote -v` vide), le dire au lieu de proposer le push.
+- L'accord vaut pour ce push seulement, pas pour les suivants.
