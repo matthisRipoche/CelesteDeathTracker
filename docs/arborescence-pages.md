@@ -24,8 +24,8 @@ les tentatives deathless**, par face de map. L'unité n'est plus la mort mais la
 
 /                            Tableau de bord
 /maps                        Mes maps                                  (une carte par face jouée)
-/maps/:sid/:side             Détail d'une face de map                  ← page centrale
-/maps/:sid/:side/:room       Détail d'une room
+/maps/:side?sid=             Détail d'une face de map                  ← page centrale (faite)
+/maps/:side/:room?sid=      Détail d'une room
 /attempts                    Historique des tentatives                 (filtres)
 /attempts/:id                Détail d'une tentative
 /live                        Direct
@@ -34,11 +34,11 @@ les tentatives deathless**, par face de map. L'unité n'est plus la mort mais la
 /account/devices             Appareils                                 (l'ancien /tokens)
 ```
 
-- `:sid` est le SID encodé (`Celeste%2F1-ForsakenCity`), `:side` vaut `a`, `b` ou `c`, `:room` le nom
+- `sid` (paramètre de requête, car le SID contient des « / ») est `Celeste/1-ForsakenCity` ; `:side` vaut `a`, `b` ou `c` ; `:room` est le nom
   de la room tel que le jeu l'envoie (`6a`, `b-05`). Une room s'identifie par (map, face, room).
 - `/pair` ne change pas : le mod ouvre cette adresse (`app.public-url` + `/pair`).
 - Redirections des anciennes adresses : `/tokens` → `/account/devices`, `/profile` → `/account`,
-  `/map?sid=…` → `/maps/:sid/a`.
+  `/map?sid=…` → `/maps`.
 
 ### Navigation
 
@@ -64,7 +64,7 @@ Répond à « où en suis-je aujourd'hui ? ».
   réussis, meilleure progression, dernière partie.
 - Tri : plus récentes, plus travaillées, A à Z. Recherche et filtre par mod.
 
-### Détail d'une face `/maps/:sid/:side`
+### Détail d'une face `/maps/:side?sid=` (fait)
 La page centrale. Répond à « où mon deathless casse-t-il ? ».
 - En-tête : nom officiel, face, mod, lien vers l'historique filtré.
 - Chiffres : tentatives, deathless réussis, taux de réussite, meilleure progression, tentative la plus
@@ -74,7 +74,7 @@ La page centrale. Répond à « où mon deathless casse-t-il ? ».
 - **Évolution** : durée (ou progression) de chaque tentative dans le temps, pour voir si on progresse.
 - Dix dernières tentatives (résultat, durée, room de fin).
 
-### Détail d'une room `/maps/:sid/:side/:room`
+### Détail d'une room `/maps/:side/:room?sid=`
 - Chiffres : entrées dans la room, morts, taux de mort (morts / entrées), dernière mort.
 - **Nuage de points** des morts (puis heatmap de densité) avec les coordonnées du jeu.
 - Évolution du taux de mort dans le temps.
@@ -121,9 +121,9 @@ Toutes les routes sont filtrées par compte, comme `GET /api/deaths` aujourd'hui
 
 | Route | Sert à |
 |---|---|
-| `GET /api/maps` | Mes maps : une ligne par face, avec les chiffres de la carte |
-| `GET /api/maps/{sid}/{side}` | Détail d'une face : chiffres, rooms dans l'ordre avec le nombre de fins, évolution |
-| `GET /api/maps/{sid}/{side}/rooms/{room}` | Détail d'une room : entrées, morts, taux, positions |
+| `GET /api/faces` (fait) | Mes maps : une ligne par face, avec les chiffres de la carte |
+| `GET /api/faces/detail?sid=&side=` (fait) | Détail d'une face : chiffres, rooms dans l'ordre avec le nombre de fins, évolution |
+| `GET /api/faces/room?sid=&side=&room=` | Détail d'une room : entrées, morts, taux, positions |
 | `GET /api/attempts` | Historique (filtres : map, face, résultat, période ; pagination) |
 | `GET /api/attempts/{id}` | Détail d'une tentative : parcours et morts |
 | `GET /api/summary` | Tableau de bord : reprendre, chiffres du jour, maps récentes, activité |
@@ -138,7 +138,7 @@ le tableau de bord actuel.
 |---|---|
 | Tableau de bord = total de morts, camembert, classement des rooms, dernières morts | Tableau de bord = progression et tentatives du jour |
 | `/maps` = une carte par map, nombre de morts | Une carte par **face**, tentatives et réussites |
-| `/map?sid=` = rooms et nuage de points | `/maps/:sid/:side` puis `/maps/:sid/:side/:room` |
+| `/map?sid=` = rooms et nuage de points | `/maps/:side?sid=` puis `/maps/:side/:room?sid=` |
 | `/profile` et `/tokens` en barre ou page isolée | `/account` et `/account/devices` sous le menu utilisateur |
 | Calculs dans le navigateur depuis `GET /api/deaths` | Routes de statistiques côté Spring |
 | Pas de direct | `/live` et bandeau global |
