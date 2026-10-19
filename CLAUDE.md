@@ -49,7 +49,8 @@ Celeste (jeu) ──[mod C#]──HTTP POST──▶ dashboard (Express | Flask)
 | `docker-compose.yml` | Pile db (postgres:17) + api + web (nginx). `docker-compose.override.yml` (dev) publie 5432. `.env` (ignoré) : `POSTGRES_PASSWORD`, `WEB_PORT`. Voir `docs/docker-and-deployment.md`. |
 | `web/` | **Front Angular 20** (CLI 20 car Node 24.12 < 24.15 exigé par le CLI récent). Dashboard v1 : `death.model.ts`, `death.service.ts`, `app.ts/html/css`. Stats calculées côté client depuis `GET /api/deaths`, poll 3 s via `toSignal(timer…)`. |
 | `dashboard-legacy/` | **OBSOLÈTE** : ancien prototype Express/Flask + `deaths.json`. Ne pas lancer avec `api/` (même port 5000). |
-| `docs/data-model.md` | Contrat de données `DeathEvent` / `SessionEvent` / SID. À lire avant de toucher aux payloads. |
+| `docs/data-model.md` | Contrat de données `DeathEvent` / `AttemptEvent` / SID. À lire avant de toucher aux payloads. |
+| `docs/donnees-du-jeu.md` | Sens de chaque champ envoyé par le jeu, limites, données manquantes, évolutions futures (cause de mort, dashes, bornes des rooms). Le site vise le **deathless par face de map**. |
 | `docs/auth-and-tokens.md` | Auth du site vs mod, cycle de vie et stockage des tokens d'API, règles de sécurité. |
 
 ## Commandes (prototype)
@@ -89,7 +90,7 @@ Navigateur (session cookie + CSRF) :
 
 Mod C# (`Authorization: Bearer cdt_...`, sans session ni CSRF, chaîne de sécurité séparée) :
 - `POST /api/ingest/deaths` : `DeathEvent` → rattaché au compte propriétaire du token (jamais d'id utilisateur dans le payload)
-- `POST /api/ingest/events` : `SessionEvent` → 202, **non stocké pour l'instant**
+- `POST /api/ingest/events` : `AttemptEvent` (`attempt_start` / `room_enter` / `attempt_end`) → 202, stocké dans `attempts` et `room_entries`. Les morts portent `attemptId`, `side`, `saveSlot` (facultatifs : l'ancien mod ne les envoie pas).
 
 Appairage (sans token, limité en débit, `/api/pairing/*`) :
 - Mod : `POST /api/pairing/start` {deviceName} → `deviceCode` (secret) + `userCode` XXXX-XXXX + `verificationUrl` ; `POST /api/pairing/poll` {deviceCode} → `pending` / `approved`+token (UNE seule fois) / `denied` / `expired`
@@ -111,7 +112,7 @@ Le mod envoie en camelCase, tous les champs de `DeathEvent` sont obligatoires (J
 - **Garder `server.js` et `server.py` synchronisés** tant qu'ils existent (mêmes routes, mêmes réponses).
 - **`dashboard-legacy/deaths.json` contient des données réelles** (23 morts enregistrées ; le `totalDeaths` ~35k dedans est le compteur du fichier de sauvegarde du jeu, pas le nombre de lignes) : ne pas l'écraser ni le réinitialiser sans demande explicite. Prévoir un script d'import vers la nouvelle base.
 - `id` = `deaths.length` dans le prototype : incohérent après suppression ou édition manuelle.
-- Hooks MonoMod : `On.Celeste.Player.Die`, `Level.Begin`, `Level.End` (délégués `On.*` de `MMHOOK_Celeste.dll`). Tout nouveau hook doit être désabonné dans `Unload()`.
+- Hooks : `On.Celeste.Player.Die` (délégué MonoMod de `MMHOOK_Celeste.dll`) et les événements Everest `Everest.Events.Level.OnLoadLevel` / `OnTransitionTo` / `OnExit` (tentatives). Tout nouveau hook doit être désabonné dans `Unload()`. Les anciens `Level.Begin/End` ont été retirés (ils partaient à chaque rechargement du niveau). Vérifié en jeu : une partie = une tentative (même avec des morts), `give_up` et `completed` reçus, face B détectée. **Le redémarrage rapide ne déclenche pas `OnExit`** et réutilise le même objet `Session` : il est détecté quand le temps ou les morts de la session reculent. Vérifié aussi : `restart`, `golden_restart`, `completed` (deathless réussi), faces A/B/C, map de mod. Reste à confirmer : `save_and_quit`.
 - Envois HTTP fire-and-forget (timeout 2 s, erreurs en `Verbose`) : le jeu ne doit jamais être bloqué ou planté par le serveur. Le passage à un serveur distant demandera une file d'attente avec retry.
 - `timeInRoomMs` = `Session.Time / 10_000` (ticks .NET → ms) : temps de session, pas strictement celui de la room.
 - SID de mods : `levelSet/index/mapName` ; `mod` et `map` sont dérivés (stockables en colonnes indexées).

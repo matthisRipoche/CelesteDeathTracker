@@ -34,15 +34,27 @@ public class Death {
     private int totalDeaths;
     @Column(name = "session_deaths")
     private int sessionDeaths;
+    // Malgré son nom, c'est le temps de la PARTIE (Session.Time), pas celui de la room
     @Column(name = "time_in_room_ms")
     private long timeInRoomMs;
+
+    // Contexte envoyé par le mod récent ; null pour les anciennes morts
+    @Column(name = "attempt_id")
+    private Long attemptId;
+    private String side;
+    @Column(name = "save_slot")
+    private Integer saveSlot;
 
     // JPA exige un constructeur sans argument
     protected Death() {
     }
 
     public Death(Long userId, long timestamp, String chapter, String room, int deathX, int deathY,
-                 int totalDeaths, int sessionDeaths, long timeInRoomMs) {
+                 int totalDeaths, int sessionDeaths, long timeInRoomMs,
+                 Long attemptId, String side, Integer saveSlot) {
+        this.attemptId = attemptId;
+        this.side = side;
+        this.saveSlot = saveSlot;
         this.userId = userId;
         this.timestamp = timestamp;
         this.chapter = chapter;
@@ -64,4 +76,7 @@ public class Death {
     public int getTotalDeaths() { return totalDeaths; }
     public int getSessionDeaths() { return sessionDeaths; }
     public long getTimeInRoomMs() { return timeInRoomMs; }
+    public Long getAttemptId() { return attemptId; }
+    public String getSide() { return side; }
+    public Integer getSaveSlot() { return saveSlot; }
 }

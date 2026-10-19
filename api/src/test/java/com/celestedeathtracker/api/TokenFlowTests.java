@@ -144,12 +144,12 @@ class TokenFlowTests {
     }
 
     @Test
-    void sessionEventsAreAccepted() throws Exception {
+    void attemptEventsAreAccepted() throws Exception {
         MockHttpSession session = newLoggedInUser();
         Created token = createToken(session, "t");
         mvc.perform(post("/api/ingest/events").header("Authorization", "Bearer " + token.token())
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"type\":\"session_start\",\"chapter\":\"a/b\",\"room\":\"r\",\"timestamp\":1}"))
+                .content("{\"type\":\"attempt_start\",\"attemptId\":\"11111111-1111-1111-1111-111111111111\",\"chapter\":\"a/b\",\"side\":\"A\",\"room\":\"r\",\"timestamp\":1}"))
                 .andExpect(status().isAccepted());
     }
 }
