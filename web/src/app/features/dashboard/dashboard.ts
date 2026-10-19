@@ -1,10 +1,11 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { catchError, map, of, startWith, switchMap, timer } from 'rxjs';
+import { catchError, distinctUntilChanged, map, of, startWith, switchMap, timer } from 'rxjs';
 import { RouterLink } from '@angular/router';
 import { Shell } from '../../shared/shell/shell';
 import { Death } from '../../core/death.model';
+import { sameDeathList } from '../../core/death-list';
 import { DeathService } from '../../core/death.service';
 import { deathsToday } from '../../core/chart-data';
 import { DeathsPerDay } from '../../shared/charts/deaths-per-day';
@@ -34,6 +35,9 @@ export class Dashboard {
    * Flux RxJS -> signal.
    * timer(0, 3000) émet immédiatement puis toutes les 3 s ; switchMap lance une requête
    * à chaque tick ; catchError garde l'interface vivante si l'API est arrêtée.
+   * distinctUntilChanged() : l'API renvoie une NOUVELLE liste à chaque requête, même identique.
+   * Sans lui, chaque tick remplacerait l'état, recalculerait tout et redessinerait les graphiques
+   * toutes les 3 s. On ne propage donc que ce qui a vraiment changé (mort ajoutée, passage en erreur).
    * toSignal() convertit le flux en signal lisible dans le template : state().
    */
   protected readonly state = toSignal(
@@ -45,6 +49,9 @@ export class Dashboard {
         ),
       ),
       startWith<State>({ status: 'loading' }),
+      distinctUntilChanged((a, b) =>
+        a.status === 'ok' && b.status === 'ok' ? sameDeathList(a.deaths, b.deaths) : a.status === b.status,
+      ),
     ),
     { requireSync: true },
   );

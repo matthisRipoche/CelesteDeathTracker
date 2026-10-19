@@ -41,6 +41,8 @@ export class PositionsChart {
 
   protected readonly options: ChartConfiguration<'scatter'>['options'] = {
     responsive: true,
+    // Pas d'animation de redessin : une mort qui arrive met le graphique à jour sans le faire « rejouer ».
+    animation: false,
     maintainAspectRatio: false,
     plugins: { legend: { display: false } },
     scales: {
