@@ -1,6 +1,7 @@
 package com.celestedeathtracker.api.repository;
 
 import com.celestedeathtracker.api.model.Death;
+import java.util.Collection;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -12,4 +13,7 @@ public interface DeathRepository extends JpaRepository<Death, Long> {
 
     // Toujours filtrer par propriétaire : un compte ne doit jamais voir les morts d'un autre.
     List<Death> findByUserIdOrderByIdAsc(Long userId);
+
+    // Les identifiants de tentative viennent de tentatives déjà filtrées par propriétaire.
+    List<Death> findByAttemptIdInOrderByIdAsc(Collection<Long> attemptIds);
 }

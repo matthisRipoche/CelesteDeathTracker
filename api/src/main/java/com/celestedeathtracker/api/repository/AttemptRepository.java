@@ -11,4 +11,6 @@ public interface AttemptRepository extends JpaRepository<Attempt, Long> {
     Optional<Attempt> findByUserIdAndClientId(Long userId, String clientId);
 
     List<Attempt> findByUserIdOrderByStartedAtAsc(Long userId);
+
+    List<Attempt> findByUserIdAndChapterAndSideOrderByStartedAtAsc(Long userId, String chapter, String side);
 }
