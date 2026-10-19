@@ -12,11 +12,14 @@ public record DeathResponse(
         int deathY,
         int totalDeaths,
         int sessionDeaths,
-        long timeInRoomMs) {
+        long timeInRoomMs,
+        Long attemptId,
+        String side,
+        Integer saveSlot) {
 
     public static DeathResponse from(Death d) {
         return new DeathResponse(d.getId(), d.getTimestamp(), d.getChapter(), d.getRoom(),
                 d.getDeathX(), d.getDeathY(), d.getTotalDeaths(), d.getSessionDeaths(),
-                d.getTimeInRoomMs());
+                d.getTimeInRoomMs(), d.getAttemptId(), d.getSide(), d.getSaveSlot());
     }
 }

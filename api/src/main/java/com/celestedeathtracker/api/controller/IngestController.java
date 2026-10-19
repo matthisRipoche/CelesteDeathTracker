@@ -1,11 +1,12 @@
 package com.celestedeathtracker.api.controller;
 
+import com.celestedeathtracker.api.dto.AttemptEventRequest;
 import com.celestedeathtracker.api.dto.DeathRequest;
 import com.celestedeathtracker.api.dto.DeathResponse;
-import com.celestedeathtracker.api.dto.SessionEventRequest;
 import com.celestedeathtracker.api.model.Death;
 import com.celestedeathtracker.api.repository.DeathRepository;
 import com.celestedeathtracker.api.security.RateLimiter;
+import com.celestedeathtracker.api.service.AttemptService;
 import jakarta.validation.Valid;
 import java.time.Duration;
 import org.springframework.http.HttpStatus;
@@ -29,10 +30,12 @@ public class IngestController {
     private static final int MAX_PER_MINUTE = 300;
 
     private final DeathRepository deaths;
+    private final AttemptService attemptService;
     private final RateLimiter rateLimiter;
 
-    public IngestController(DeathRepository deaths, RateLimiter rateLimiter) {
+    public IngestController(DeathRepository deaths, AttemptService attemptService, RateLimiter rateLimiter) {
         this.deaths = deaths;
+        this.attemptService = attemptService;
         this.rateLimiter = rateLimiter;
     }
 
@@ -40,16 +43,22 @@ public class IngestController {
     @ResponseStatus(HttpStatus.CREATED)
     public DeathResponse death(@AuthenticationPrincipal Long userId, @Valid @RequestBody DeathRequest r) {
         limit(userId);
+        // La mort est rattachée à sa tentative (créée au besoin) quand le mod récent l'indique
+        Long attemptId = r.attemptId() == null ? null
+                : attemptService.getOrCreate(userId, r.attemptId(), r.chapter(), r.side(),
+                        r.saveSlot(), r.timestamp(), r.timeInRoomMs()).getId();
         Death saved = deaths.save(new Death(userId, r.timestamp(), r.chapter(), r.room(),
-                r.deathX(), r.deathY(), r.totalDeaths(), r.sessionDeaths(), r.timeInRoomMs()));
+                r.deathX(), r.deathY(), r.totalDeaths(), r.sessionDeaths(), r.timeInRoomMs(),
+                attemptId, r.side(), r.saveSlot()));
         return DeathResponse.from(saved);
     }
 
-    /** Événements de session : acceptés mais pas encore stockés (voir CLAUDE.md, parcours étape 5). */
+    /** Événements de tentative : attempt_start, room_enter, attempt_end. */
     @PostMapping("/events")
     @ResponseStatus(HttpStatus.ACCEPTED)
-    public void event(@AuthenticationPrincipal Long userId, @Valid @RequestBody SessionEventRequest r) {
+    public void event(@AuthenticationPrincipal Long userId, @Valid @RequestBody AttemptEventRequest r) {
         limit(userId);
+        attemptService.apply(userId, r);
     }
 
     private void limit(Long userId) {
