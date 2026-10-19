@@ -47,46 +47,42 @@ export class DesignSystem {
     ['assets', 'Assets du jeu (local)'],
   ] as const;
 
+  protected readonly paper: Swatch[] = [
+    { token: '--ds-paper', hex: '#eef1ee', note: 'papier glacier · fond clair' },
+    { token: '--ds-paper-sunk', hex: '#e1e7e3', note: 'survol, barres, champs' },
+    { token: '--ds-ink', hex: '#1b2a2e', note: 'encre de roche · texte, boutons' },
+    { token: '--ds-granite', hex: '#53646a', note: 'texte secondaire · 5,4:1' },
+    { token: '--ds-rule', hex: '#c5cfcb', note: 'filets fins' },
+  ];
+
   protected readonly night: Swatch[] = [
-    { token: '--ds-night-950', hex: '#0e0c1d', note: 'fond' },
-    { token: '--ds-night-900', hex: '#151229', note: 'surface' },
-    { token: '--ds-night-800', hex: '#1d1938', note: 'surface relevée' },
-    { token: '--ds-night-700', hex: '#2a2450' },
-    { token: '--ds-night-600', hex: '#3b3470', note: 'bordure' },
+    { token: '--ds-night', hex: '#0f181b', note: 'ardoise de nuit · fond sombre' },
+    { token: '--ds-night-raised', hex: '#1a282c', note: 'survol, barres, champs' },
+    { token: '--ds-night-chrome', hex: '#162226', note: 'barre du haut' },
+    { token: '--ds-snow', hex: '#e7edea', note: 'texte · 15:1' },
+    { token: '--ds-mist', hex: '#9db0ac', note: 'texte secondaire · 8,1:1' },
+    { token: '--ds-night-rule', hex: '#2e4046', note: 'filets fins' },
   ];
 
-  protected readonly lavender: Swatch[] = [
-    { token: '--ds-lavender-200', hex: '#e2defa' },
-    { token: '--ds-lavender-300', hex: '#c9c4ee' },
-    { token: '--ds-lavender-400', hex: '#9d97d1', note: 'logo · texte secondaire' },
-    { token: '--ds-lavender-500', hex: '#8479c5', note: 'logo' },
-    { token: '--ds-lavender-700', hex: '#675c83', note: 'logo' },
-  ];
-
-  protected readonly accents: Swatch[] = [
-    { token: '--ds-pink-400', hex: '#f8588c', note: 'dash · accent' },
-    { token: '--ds-pink-500', hex: '#f73e7b' },
-    { token: '--ds-orange-400', hex: '#f68134', note: 'dash' },
-    { token: '--ds-strawberry-500', hex: '#ed4a44', note: 'fraise · danger' },
-    { token: '--ds-strawberry-700', hex: '#a81824' },
-    { token: '--ds-green-400', hex: '#93bd40', note: 'cristal · succès' },
-    { token: '--ds-gold-400', hex: '#f2c230', note: 'fraise dorée · alerte' },
-    { token: '--ds-ice-400', hex: '#66c4e1', note: 'givre · info' },
-    { token: '--ds-ice-300', hex: '#a6dcee', note: 'focus' },
+  protected readonly signals: Swatch[] = [
+    { token: '--ds-pine', hex: '#1f7a4d', note: 'sommet : réussite (clair)' },
+    { token: '--ds-pine-light', hex: '#4fbf86', note: 'sommet (sombre)' },
+    { token: '--ds-brick', hex: '#b5382a', note: 'chute : échec (clair)' },
+    { token: '--ds-brick-light', hex: '#f0705f', note: 'chute (sombre)' },
+    { token: '--ds-gold', hex: '#f2d31b', note: 'fraise dorée : le surligneur' },
   ];
 
   protected readonly semantic: Swatch[] = [
-    { token: '--color-bg', hex: 'night-950' },
-    { token: '--color-surface', hex: 'night-900' },
-    { token: '--color-surface-raised', hex: 'night-800' },
-    { token: '--color-border', hex: 'night-600' },
-    { token: '--color-text', hex: 'snow' },
-    { token: '--color-text-muted', hex: 'lavender-400' },
-    { token: '--color-accent', hex: 'pink-400' },
-    { token: '--color-info', hex: 'ice-400' },
-    { token: '--color-success', hex: 'green-400' },
-    { token: '--color-warning', hex: 'gold-400' },
-    { token: '--color-danger', hex: 'strawberry-500' },
+    { token: '--color-bg', hex: 'papier / ardoise' },
+    { token: '--color-surface-raised', hex: 'papier creusé' },
+    { token: '--color-border', hex: 'trait' },
+    { token: '--color-border-strong', hex: 'encre' },
+    { token: '--color-text', hex: 'encre / neige' },
+    { token: '--color-text-muted', hex: 'granit / brume' },
+    { token: '--color-highlight', hex: 'fraise dorée' },
+    { token: '--color-success', hex: 'sommet' },
+    { token: '--color-danger', hex: 'chute' },
+    { token: '--color-chrome', hex: 'barre du haut' },
   ];
 
   protected readonly spacing = [1, 2, 3, 4, 5, 6, 7, 8];

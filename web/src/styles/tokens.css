@@ -1,82 +1,85 @@
 /*
- * Design tokens — « Basecamp »
+ * Design tokens — « Topo »
  *
- * Palette échantillonnée sur les sprites du jeu (logo lavande et glace, fraise, cristal de dash,
- * cœurs) puis reformulée en échelles. Aucune image du jeu n'est utilisée en production :
- * seules des valeurs de couleur, qui ne sont pas protégées, en sont dérivées.
+ * Un carnet de cordée : papier glacier et encre de roche, un seul surligneur (la fraise dorée).
+ * Maquettes de référence : canvas « Death Tracker, maquettes » (voir docs/design-system.md).
  *
  * Deux niveaux : la palette brute (--ds-*) ne s'emploie jamais directement dans un composant ;
- * on passe par les jetons sémantiques (--color-*), ce qui permet de changer de thème sans
- * toucher aux composants.
+ * on passe par les jetons sémantiques (--color-*). Clair et sombre redéfinissent uniquement ces
+ * derniers : aucun composant n'a de couleur propre.
+ *
+ * Aucun asset du jeu n'est utilisé ici : les motifs (fraise dorée, explosion de pixels…) sont
+ * dessinés pour ce site. Les sprites officiels, © Extremely OK Games, restent locaux.
  */
 :root {
   /* ---------- Palette brute ---------- */
-  --ds-night-950: #0e0c1d;
-  --ds-night-900: #151229;
-  --ds-night-800: #1d1938;
-  --ds-night-700: #2a2450;
-  --ds-night-600: #3b3470;
+  --ds-paper: #eef1ee;        /* papier glacier */
+  --ds-paper-sunk: #e1e7e3;
+  --ds-ink: #1b2a2e;          /* encre de roche */
+  --ds-granite: #53646a;
+  --ds-rule: #c5cfcb;
+  --ds-pine: #1f7a4d;         /* sommet */
+  --ds-brick: #b5382a;        /* chute */
 
-  --ds-lavender-200: #e2defa;
-  --ds-lavender-300: #c9c4ee;
-  --ds-lavender-400: #9d97d1;   /* logo */
-  --ds-lavender-500: #8479c5;   /* logo */
-  --ds-lavender-700: #675c83;   /* logo */
+  --ds-night: #0f181b;        /* ardoise de nuit */
+  --ds-night-raised: #1a282c;
+  --ds-night-chrome: #162226;
+  --ds-snow: #e7edea;
+  --ds-mist: #9db0ac;
+  --ds-night-rule: #2e4046;
+  --ds-pine-light: #4fbf86;
+  --ds-brick-light: #f0705f;
 
-  --ds-ice-300: #a6dcee;
-  --ds-ice-400: #66c4e1;        /* givre du logo */
+  --ds-gold: #f2d31b;         /* fraise dorée : le surligneur */
+  --ds-berry: #f2c230;        /* corps de la fraise dorée dessinée */
 
-  --ds-pink-400: #f8588c;       /* dash à une charge */
-  --ds-pink-500: #f73e7b;
-  --ds-orange-400: #f68134;     /* dash */
+  /* ---------- Sémantique : thème clair (par défaut) ---------- */
+  --color-bg: var(--ds-paper);
+  --color-surface: var(--ds-paper);
+  --color-surface-raised: var(--ds-paper-sunk);
+  --color-surface-sunken: var(--ds-paper-sunk);
+  --color-border: var(--ds-rule);
+  --color-border-strong: var(--ds-ink);
 
-  --ds-strawberry-500: #ed4a44; /* fraise */
-  --ds-strawberry-700: #a81824;
+  --color-text: var(--ds-ink);
+  --color-text-muted: var(--ds-granite);
+  --color-text-faint: var(--ds-granite);
+  --color-on-accent: var(--ds-paper);
 
-  --ds-green-400: #93bd40;      /* cristal de dash */
-  --ds-green-600: #208020;
+  --color-accent: var(--ds-ink);
+  --color-accent-hover: var(--ds-gold);
+  --color-accent-soft: var(--ds-paper-sunk);
 
-  --ds-gold-400: #f2c230;       /* dérivé de la fraise dorée */
-  --ds-gold-600: #b38805;
+  --color-highlight: var(--ds-gold);
+  --color-on-highlight: var(--ds-ink);
 
-  --ds-snow: #f5f2ff;
+  --color-info: var(--ds-ink);
+  --color-success: var(--ds-pine);
+  --color-warning: var(--ds-ink);
+  --color-danger: var(--ds-brick);
+  --color-focus: var(--ds-ink);
 
-  /* ---------- Sémantique : thème sombre (par défaut) ---------- */
-  --color-bg: var(--ds-night-950);
-  --color-surface: var(--ds-night-900);
-  --color-surface-raised: var(--ds-night-800);
-  --color-surface-sunken: #0a0916;
-  --color-border: var(--ds-night-600);
-  --color-border-strong: var(--ds-lavender-700);
+  /* Barre du haut et barre du bas mobile */
+  --color-chrome: var(--ds-ink);
+  --color-on-chrome: #ffffff;
+  --color-on-chrome-muted: #c9d3d0;
+  --color-chrome-art: #2a3d42;
 
-  --color-text: var(--ds-snow);
-  --color-text-muted: var(--ds-lavender-400);
-  --color-text-faint: var(--ds-lavender-700);
-  --color-on-accent: var(--ds-night-950);
+  /* ---------- Typographie : une seule famille, deux largeurs ---------- */
+  --font-sans: 'Archivo Variable', 'Segoe UI', system-ui, sans-serif;
+  --font-display: var(--font-sans);
+  --stretch-display: 62%;
 
-  --color-accent: var(--ds-pink-400);
-  --color-accent-hover: var(--ds-pink-500);
-  --color-accent-soft: rgb(248 88 140 / 0.14);
-
-  --color-info: var(--ds-ice-400);
-  --color-success: var(--ds-green-400);
-  --color-warning: var(--ds-gold-400);
-  --color-danger: var(--ds-strawberry-500);
-  --color-focus: var(--ds-ice-300);
-
-  /* ---------- Typographie ---------- */
-  --font-sans: 'Outfit Variable', 'Segoe UI', system-ui, sans-serif;
-  --font-pixel: 'Pixelify Sans Variable', 'Consolas', monospace;
-
-  --text-xs: 0.75rem;
+  --text-xs: 0.8125rem;
   --text-sm: 0.875rem;
   --text-md: 1rem;
   --text-lg: 1.25rem;
   --text-xl: 1.625rem;
   --text-2xl: 2.25rem;
   --text-3xl: 3.25rem;
+  --text-4xl: 5rem;
 
-  --leading-tight: 1.15;
+  --leading-tight: 1.1;
   --leading-normal: 1.5;
 
   /* ---------- Espacement (base 4 px) ---------- */
@@ -89,15 +92,15 @@
   --space-7: 3rem;
   --space-8: 4rem;
 
-  /* ---------- Forme : angles francs, ombres « pixel » franches ---------- */
+  /* ---------- Forme : filets plutôt que boîtes ---------- */
   --radius-sm: 2px;
-  --radius-md: 4px;
-  --radius-lg: 8px;
+  --radius-md: 3px;
+  --radius-lg: 3px;
   --border-width: 2px;
 
-  --shadow-hard: 0 3px 0 rgb(0 0 0 / 0.45);
-  --shadow-hard-lg: 0 5px 0 rgb(0 0 0 / 0.45);
-  --shadow-glow: 0 0 0 3px var(--color-accent-soft);
+  --shadow-hard: none;
+  --shadow-hard-lg: none;
+  --shadow-glow: 0 0 0 6px var(--color-highlight);
 
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
   --duration-fast: 120ms;
@@ -105,6 +108,73 @@
 
   --content-width: 1120px;
   --topbar-height: 60px;
+
+  color-scheme: light;
+}
+
+/* ---------- Thème sombre : suit le système, ou se force avec data-theme ---------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --color-bg: var(--ds-night);
+    --color-surface: var(--ds-night);
+    --color-surface-raised: var(--ds-night-raised);
+    --color-surface-sunken: var(--ds-night-raised);
+    --color-border: var(--ds-night-rule);
+    --color-border-strong: var(--ds-snow);
+
+    --color-text: var(--ds-snow);
+    --color-text-muted: var(--ds-mist);
+    --color-text-faint: var(--ds-mist);
+    --color-on-accent: var(--ds-night);
+
+    --color-accent: var(--ds-snow);
+    --color-accent-soft: var(--ds-night-raised);
+
+    --color-on-highlight: var(--ds-night);
+
+    --color-info: var(--ds-snow);
+    --color-success: var(--ds-pine-light);
+    --color-warning: var(--ds-snow);
+    --color-danger: var(--ds-brick-light);
+    --color-focus: var(--ds-snow);
+
+    --color-chrome: var(--ds-night-chrome);
+    --color-on-chrome-muted: var(--ds-mist);
+    --color-chrome-art: #22373d;
+
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme='dark'] {
+  --color-bg: var(--ds-night);
+  --color-surface: var(--ds-night);
+  --color-surface-raised: var(--ds-night-raised);
+  --color-surface-sunken: var(--ds-night-raised);
+  --color-border: var(--ds-night-rule);
+  --color-border-strong: var(--ds-snow);
+
+  --color-text: var(--ds-snow);
+  --color-text-muted: var(--ds-mist);
+  --color-text-faint: var(--ds-mist);
+  --color-on-accent: var(--ds-night);
+
+  --color-accent: var(--ds-snow);
+  --color-accent-soft: var(--ds-night-raised);
+
+  --color-on-highlight: var(--ds-night);
+
+  --color-info: var(--ds-snow);
+  --color-success: var(--ds-pine-light);
+  --color-warning: var(--ds-snow);
+  --color-danger: var(--ds-brick-light);
+  --color-focus: var(--ds-snow);
+
+  --color-chrome: var(--ds-night-chrome);
+  --color-on-chrome-muted: var(--ds-mist);
+  --color-chrome-art: #22373d;
+
+  color-scheme: dark;
 }
 
 @media (prefers-reduced-motion: reduce) {
