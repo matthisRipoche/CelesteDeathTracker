@@ -1,0 +1,38 @@
+<app-shell>
+  <div>
+    <p class="ds-badge ds-badge--info">Par map</p>
+    <h1 class="title">Maps</h1>
+    <p class="ds-muted lead">Une carte par map jouée, de la plus meurtrière à la moins meurtrière. Clique pour le détail.</p>
+  </div>
+
+  @switch (state().status) {
+    @case ('loading') {
+      <div class="ds-card"><div class="ds-skeleton"></div></div>
+    }
+    @case ('error') {
+      <div class="ds-alert ds-alert--danger" role="alert">
+        <span class="ds-alert__icon">!</span>
+        <p>Impossible de charger tes morts.</p>
+      </div>
+    }
+    @default {
+      @if (maps().length === 0) {
+        <div class="ds-empty">
+          <p class="ds-empty__title">Aucune map pour l'instant</p>
+          <p>Les maps apparaissent dès ta première mort enregistrée.</p>
+        </div>
+      } @else {
+        <div class="ds-grid ds-grid--auto">
+          @for (m of maps(); track m.label) {
+            <a class="ds-card map" routerLink="/map" [queryParams]="{ sid: m.label }">
+              <span class="top"><app-sprite name="strawberry" [size]="28" /><span class="ds-stat__label">{{ modName(m.label) }}</span></span>
+              <span class="name">{{ mapName(m.label) }}</span>
+              <span class="ds-stat__value ds-stat__value--danger count">{{ m.count }}</span>
+              <div class="ds-bar"><div class="ds-bar__fill" [style.width.%]="(m.count / max()) * 100"></div></div>
+            </a>
+          }
+        </div>
+      }
+    }
+  }
+</app-shell>

@@ -1,0 +1,13 @@
+:host { display: block; }
+.title { font-size: var(--text-2xl); margin-top: var(--space-2); }
+.sub { margin-top: var(--space-3); }
+.worst { font-size: var(--text-xl); font-weight: 700; overflow-wrap: anywhere; }
+.lead { margin-top: var(--space-2); max-width: 60ch; }
+.two { grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
+.note { margin: calc(-1 * var(--space-2)) 0 var(--space-3); }
+.pick {
+  background: none; border: 0; padding: 0; color: inherit; text-align: left; cursor: pointer;
+  font: inherit; font-size: var(--text-sm);
+}
+.pick:hover { color: var(--color-info); }
+.row-pick.is-selected .pick { color: var(--color-accent); font-weight: 700; }

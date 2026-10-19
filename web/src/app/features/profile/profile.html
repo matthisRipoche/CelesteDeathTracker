@@ -1,0 +1,48 @@
+<app-shell>
+  <div>
+    <p class="ds-badge ds-badge--accent">Compte</p>
+    <h1 class="title">Mon profil</h1>
+    <p class="ds-muted lead">Ton compte et un résumé de ton activité.</p>
+  </div>
+
+  <div class="ds-grid two">
+    <section class="ds-card ds-stack">
+      <div class="identity">
+        <span class="avatar ds-pixel" aria-hidden="true">{{ initial() }}</span>
+        <div>
+          <p class="email">{{ user()?.email }}</p>
+          @if (user()?.createdAt; as created) {
+            <p class="ds-muted">Membre depuis le {{ created | date: 'dd/MM/yyyy' }}</p>
+          }
+        </div>
+      </div>
+      <p class="ds-hint">
+        Pseudo, avatar et profil public arriveront avec l'étape « profils publics » du parcours.
+      </p>
+    </section>
+
+    <section class="ds-card ds-grid summary">
+      <div class="ds-stat">
+        <span class="ds-stat__label">Morts</span>
+        <span class="ds-stat__value">{{ total() | number }}</span>
+      </div>
+      <div class="ds-stat">
+        <span class="ds-stat__label">Maps jouées</span>
+        <span class="ds-stat__value ds-stat__value--info">{{ mapCount() }}</span>
+      </div>
+      <div class="ds-stat">
+        <span class="ds-stat__label">Appareils actifs</span>
+        <span class="ds-stat__value ds-stat__value--info">{{ activeDevices() }}</span>
+      </div>
+    </section>
+  </div>
+
+  <section class="ds-card ds-stack">
+    <h2 class="ds-card__title">Raccourcis</h2>
+    <div class="ds-row">
+      <a class="ds-btn" routerLink="/maps">Voir mes maps</a>
+      <a class="ds-btn" routerLink="/tokens">Gérer mes appareils</a>
+      <a class="ds-btn ds-btn--primary" routerLink="/pair">Associer un jeu</a>
+    </div>
+  </section>
+</app-shell>

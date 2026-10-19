@@ -1,0 +1,19 @@
+:host { display: block; }
+.title { font-size: var(--text-2xl); margin-top: var(--space-2); }
+.two { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.identity { display: flex; align-items: center; gap: var(--space-4); }
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  background: var(--color-surface-sunken);
+  border: var(--border-width) solid var(--color-accent);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-2xl);
+  color: var(--color-accent);
+}
+.email { font-weight: 700; overflow-wrap: anywhere; }
+.summary { grid-template-columns: repeat(3, 1fr); }
+.summary .ds-stat__value { font-size: var(--text-2xl); }
+.lead { margin-top: var(--space-2); }
