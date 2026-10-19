@@ -2,11 +2,12 @@ import { DatePipe } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { Shell } from '../../shared/shell/shell';
 import { ApiToken, CreatedToken, TokenService } from '../../core/token.service';
 
 @Component({
   selector: 'app-tokens',
-  imports: [ReactiveFormsModule, RouterLink, DatePipe],
+  imports: [ReactiveFormsModule, RouterLink, DatePipe, Shell],
   templateUrl: './tokens.html',
   styleUrl: './tokens.css',
 })

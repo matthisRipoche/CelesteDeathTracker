@@ -1,71 +1,83 @@
-<header>
-  <h1>Tokens d'API</h1>
-  <a routerLink="/">← Retour au tableau de bord</a>
-</header>
+<app-shell>
+  <div>
+    <p class="ds-badge ds-badge--info">Appareils</p>
+    <h1 class="title">Tokens d'API</h1>
+  </div>
 
-<main>
-  <section class="panel">
-    <h2>Comment ça marche</h2>
+  <section class="ds-card ds-stack">
+    <h2 class="ds-card__title">Comment ça marche</h2>
     <p>
       Chaque jeu associé reçoit un token qui dit au serveur à quel compte appartiennent ses morts.
       Il est créé <strong>automatiquement</strong> quand tu associes un jeu (page
       <a routerLink="/pair">Associer un jeu</a>) : tu n'as rien à copier. Un token ne permet que
       d'envoyer des morts, jamais de lire tes données. Révoque-le ici si tu perds un appareil.
-      La création manuelle ci-dessous ne sert que pour un usage avancé.
     </p>
   </section>
 
   @if (justCreated(); as created) {
-    <section class="panel created" role="status">
+    <section class="ds-card ds-card--accent ds-stack" role="status">
       <h2>Token « {{ created.label }} » créé</h2>
-      <p class="warning">Copie-le maintenant : il ne sera <strong>plus jamais affiché</strong>.</p>
+      <div class="ds-alert ds-alert--warning">
+        <span class="ds-alert__icon">!</span>
+        <p>Copie-le maintenant : il ne sera <strong>plus jamais affiché</strong>.</p>
+      </div>
       <code class="token">{{ created.token }}</code>
-      <div class="actions">
-        <button type="button" (click)="copy()">{{ copied() ? 'Copié ✓' : 'Copier' }}</button>
-        <button type="button" class="secondary" (click)="dismiss()">J'ai copié le token</button>
+      <div class="ds-row">
+        <button type="button" class="ds-btn ds-btn--primary" (click)="copy()">{{ copied() ? 'Copié ✓' : 'Copier' }}</button>
+        <button type="button" class="ds-btn" (click)="dismiss()">J'ai copié le token</button>
       </div>
     </section>
   }
 
-  <section class="panel">
-    <h2>Nouveau token</h2>
-    <form [formGroup]="form" (ngSubmit)="create()" novalidate>
-      <input type="text" formControlName="label" placeholder="Nom (ex. PC fixe)" maxlength="100" />
-      <button type="submit">Créer</button>
+  <section class="ds-card ds-stack">
+    <h2 class="ds-card__title">Nouveau token (usage avancé)</h2>
+    <form class="ds-row" [formGroup]="form" (ngSubmit)="create()" novalidate>
+      <input class="ds-input name" type="text" formControlName="label" placeholder="Nom (ex. PC fixe)" maxlength="100" aria-label="Nom du token" />
+      <button type="submit" class="ds-btn ds-btn--primary">Créer</button>
     </form>
     @if (form.controls.label.touched && form.controls.label.invalid) {
-      <span class="field-error">Donne un nom à ce token.</span>
+      <span class="ds-error">Donne un nom à ce token.</span>
     }
     @if (error(); as message) {
-      <div class="error" role="alert">{{ message }}</div>
+      <div class="ds-alert ds-alert--danger" role="alert">
+        <span class="ds-alert__icon">!</span>
+        <p>{{ message }}</p>
+      </div>
     }
   </section>
 
-  <section class="panel">
-    <h2>Mes tokens</h2>
+  <section class="ds-card">
+    <h2 class="ds-card__title">Mes tokens</h2>
     @if (tokens().length === 0) {
-      <p class="muted">Aucun token pour l'instant.</p>
+      <div class="ds-empty">
+        <p class="ds-empty__title">Aucun token pour l'instant</p>
+        <p>Associe un jeu pour en créer un automatiquement.</p>
+      </div>
     } @else {
-      <table>
-        <thead>
-          <tr><th>Nom</th><th>Créé</th><th>Dernier envoi</th><th>État</th><th></th></tr>
-        </thead>
-        <tbody>
-          @for (t of tokens(); track t.id) {
-            <tr [class.revoked]="t.revoked">
-              <td>{{ t.label }}</td>
-              <td>{{ t.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
-              <td>{{ t.lastUsedAt ? (t.lastUsedAt | date: 'dd/MM/yyyy HH:mm') : 'jamais' }}</td>
-              <td>{{ t.revoked ? 'Révoqué' : 'Actif' }}</td>
-              <td>
-                @if (!t.revoked) {
-                  <button type="button" class="danger" (click)="revoke(t)">Révoquer</button>
-                }
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
+      <div class="ds-table-wrap">
+        <table class="ds-table">
+          <thead>
+            <tr><th>Nom</th><th>Créé</th><th>Dernier envoi</th><th>État</th><th></th></tr>
+          </thead>
+          <tbody>
+            @for (t of tokens(); track t.id) {
+              <tr [class.revoked]="t.revoked">
+                <td>{{ t.label }}</td>
+                <td>{{ t.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+                <td>{{ t.lastUsedAt ? (t.lastUsedAt | date: 'dd/MM/yyyy HH:mm') : 'jamais' }}</td>
+                <td>
+                  <span class="ds-badge" [class.ds-badge--success]="!t.revoked">{{ t.revoked ? 'Révoqué' : 'Actif' }}</span>
+                </td>
+                <td>
+                  @if (!t.revoked) {
+                    <button type="button" class="ds-btn ds-btn--danger ds-btn--sm" (click)="revoke(t)">Révoquer</button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
     }
   </section>
-</main>
+</app-shell>

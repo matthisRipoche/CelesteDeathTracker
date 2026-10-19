@@ -34,8 +34,8 @@ export class Login {
     password: ['', [Validators.required, Validators.minLength(8)]],
   });
 
-  protected toggleMode(): void {
-    this.mode.update((m) => (m === 'login' ? 'register' : 'login'));
+  protected setMode(mode: 'login' | 'register'): void {
+    this.mode.set(mode);
     this.error.set(null);
   }
 

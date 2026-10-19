@@ -2,10 +2,14 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { catchError, map, of, startWith, switchMap, timer } from 'rxjs';
-import { Router, RouterLink } from '@angular/router';
-import { AuthService } from '../../core/auth.service';
+import { RouterLink } from '@angular/router';
+import { Shell } from '../../shared/shell/shell';
 import { Death } from '../../core/death.model';
 import { DeathService } from '../../core/death.service';
+import { deathsToday } from '../../core/chart-data';
+import { DeathsPerDay } from '../../shared/charts/deaths-per-day';
+import { ShareChart } from '../../shared/charts/share-chart';
+import { Sprite } from '../../shared/sprite/sprite';
 
 interface Count {
   label: string;
@@ -19,20 +23,12 @@ type State =
 
 @Component({
   selector: 'app-dashboard',
-  imports: [DatePipe, DecimalPipe, RouterLink],
+  imports: [DatePipe, DecimalPipe, RouterLink, Shell, DeathsPerDay, ShareChart, Sprite],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
 })
 export class Dashboard {
   private readonly deathService = inject(DeathService);
-  private readonly auth = inject(AuthService);
-  private readonly router = inject(Router);
-
-  protected readonly user = this.auth.user;
-
-  protected logout(): void {
-    this.auth.logout().subscribe(() => this.router.navigateByUrl('/login'));
-  }
 
   /**
    * Flux RxJS -> signal.
@@ -60,6 +56,7 @@ export class Dashboard {
   });
 
   protected readonly total = computed(() => this.deaths().length);
+  protected readonly today = computed(() => deathsToday(this.deaths()));
 
   private readonly rooms = computed(() =>
     this.countBy((d) => `${this.mapName(d.chapter)} / ${d.room}`),

@@ -3,6 +3,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { Shell } from '../../shared/shell/shell';
 import { Observable } from 'rxjs';
 import { PairingRequestInfo, PairingService } from '../../core/pairing.service';
 
@@ -10,7 +11,7 @@ type Step = 'enter' | 'confirm' | 'done' | 'denied';
 
 @Component({
   selector: 'app-pair',
-  imports: [ReactiveFormsModule, RouterLink, DatePipe],
+  imports: [ReactiveFormsModule, RouterLink, DatePipe, Shell],
   templateUrl: './pair.html',
   styleUrl: './pair.css',
 })

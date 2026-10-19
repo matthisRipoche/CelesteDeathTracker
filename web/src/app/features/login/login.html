@@ -1,40 +1,53 @@
-<main>
-  <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
-    <h1>Celeste Death Tracker</h1>
-    <p class="subtitle">
-      {{ mode() === 'login' ? 'Connecte-toi pour voir tes morts' : 'Crée ton compte' }}
-    </p>
+<main class="wrap">
+  <form class="ds-card ds-stack" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <div class="brand">
+      <svg width="40" height="34" viewBox="0 0 13 11" shape-rendering="crispEdges" aria-hidden="true">
+        <path fill="var(--ds-lavender-500)" d="M0 11 6 0 8 4 9 3 13 11Z" />
+        <path fill="var(--ds-ice-300)" d="M6 0 7 2 5 2Z" />
+      </svg>
+      <h1 class="ds-pixel">Celeste Death Tracker</h1>
+      <p class="ds-muted">
+        {{ mode() === 'login' ? 'Connecte-toi pour retrouver tes statistiques' : "Crée ton compte d'alpiniste" }}
+      </p>
+    </div>
 
-    <label>
-      Email
-      <input type="email" formControlName="email" autocomplete="email" />
-    </label>
-    @if (form.controls.email.touched && form.controls.email.invalid) {
-      <span class="field-error">Email invalide.</span>
-    }
+    <div class="ds-tabs" role="tablist">
+      <button type="button" class="ds-tab" role="tab" [attr.aria-selected]="mode() === 'login'" (click)="setMode('login')">Connexion</button>
+      <button type="button" class="ds-tab" role="tab" [attr.aria-selected]="mode() === 'register'" (click)="setMode('register')">Inscription</button>
+    </div>
 
-    <label>
-      Mot de passe
-      <input
-        type="password"
-        formControlName="password"
+    <div class="ds-field">
+      <label class="ds-label" for="email">Email</label>
+      <input id="email" class="ds-input" type="email" formControlName="email" autocomplete="email"
+        [attr.aria-invalid]="form.controls.email.touched && form.controls.email.invalid" />
+      @if (form.controls.email.touched && form.controls.email.invalid) {
+        <span class="ds-error field-error">Email invalide.</span>
+      }
+    </div>
+
+    <div class="ds-field">
+      <label class="ds-label" for="password">Mot de passe</label>
+      <input id="password" class="ds-input" type="password" formControlName="password"
         [attr.autocomplete]="mode() === 'login' ? 'current-password' : 'new-password'"
-      />
-    </label>
-    @if (form.controls.password.touched && form.controls.password.invalid) {
-      <span class="field-error">8 caractères minimum.</span>
-    }
+        [attr.aria-invalid]="form.controls.password.touched && form.controls.password.invalid" />
+      @if (form.controls.password.touched && form.controls.password.invalid) {
+        <span class="ds-error field-error">8 caractères minimum.</span>
+      } @else {
+        <span class="ds-hint">8 caractères minimum.</span>
+      }
+    </div>
 
     @if (error(); as message) {
-      <div class="error" role="alert">{{ message }}</div>
+      <div class="ds-alert ds-alert--danger" role="alert">
+        <span class="ds-alert__icon">!</span>
+        <p>{{ message }}</p>
+      </div>
     }
 
-    <button type="submit" [disabled]="busy()">
-      {{ busy() ? '…' : mode() === 'login' ? 'Se connecter' : 'Créer le compte' }}
-    </button>
-
-    <button type="button" class="link" (click)="toggleMode()">
-      {{ mode() === 'login' ? "Pas de compte ? S'inscrire" : 'Déjà un compte ? Se connecter' }}
+    <button type="submit" class="ds-btn ds-btn--primary ds-btn--lg" [class.is-loading]="busy()" [disabled]="busy()">
+      {{ mode() === 'login' ? 'Se connecter' : 'Créer le compte' }}
     </button>
   </form>
+
+  <p class="legal ds-muted">Projet de fan, non affilié à Extremely OK Games.</p>
 </main>
