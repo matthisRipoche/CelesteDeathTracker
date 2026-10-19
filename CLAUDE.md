@@ -8,7 +8,7 @@ Dépôt Git, distant `origin` sur GitHub (`matthisRipoche/CelesteDeathTracker`).
 ## Objectif et contexte
 
 - **But final** : une **plateforme multi-utilisateurs** (comptes, tokens d'API, stats par joueur), pas un outil local.
-- **Objectif personnel de l'utilisateur** : *apprendre* Angular et Spring Boot avec ce projet. Privilégier un mode guidé : expliquer, poser le squelette et une tranche verticale, laisser l'utilisateur écrire la suite, puis relire. Ne pas tout coder d'un coup sans demande.
+- **Objectif personnel de l'utilisateur** : apprendre le **développement assisté par l'IA** (cadrer, décider, relire), pas écrire Angular/Spring à la main. Claude implémente de bout en bout (mod, API, migrations, front, tests). Il explique les choix de conception et leurs compromis, et fait valider les décisions structurantes (contrat d'API, découpage, workflow) avant de coder.
 - Éviter de passer du temps sur la config au détriment de l'apprentissage (Postgres via Docker, pas de sur-outillage).
 
 ## État actuel vs cible
