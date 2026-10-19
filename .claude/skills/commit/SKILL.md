@@ -8,6 +8,22 @@ description: Méthode de commit du projet CelesteDeathTracker (Conventional Comm
 Ne commiter que sur demande explicite de l'utilisateur. Ne jamais pousser (`git push`) sans son accord :
 après chaque série de commits, lui **demander** s'il faut pousser (étape 7), et attendre sa réponse.
 
+## 0. Travailler sur une branche, jamais sur `main`
+
+`main` déclenche la CI/CD (images + déploiement) : ne **jamais** y commiter directement.
+
+```bash
+git branch --show-current
+```
+
+- Si on est sur `main`, créer une branche avant tout commit : `git switch -c <type>/<sujet-court>`
+  (`feat/stats-api`, `fix/login-csrf`, `docs/workflow`, `chore/...`). Le préfixe reprend le type
+  du commit principal ; le sujet est en minuscules, mots séparés par des tirets.
+- Une branche = une fonctionnalité ou un correctif. Si les changements en cours couvrent
+  plusieurs sujets, les répartir sur plusieurs branches.
+- Si on est déjà sur une branche dont le sujet correspond, y rester.
+- Les changements non commités suivent au `git switch -c`.
+
 ## 1. Examiner avant de commiter
 
 ```bash
@@ -120,7 +136,10 @@ l'utilisateur (`AskUserQuestion` : oui / non), en indiquant la branche et le nom
 avance sur le distant (`git status -sb`).
 
 - **Oui** → `git push` (ou `git push -u origin <branche>` si la branche n'a pas de distant).
-  Ne jamais utiliser `--force`.
+  Ne jamais utiliser `--force`. On pousse la branche de travail, jamais `main`.
+- Après le push d'une branche, rappeler que la suite est une **pull request** vers `main`
+  (la CI lance les tests ; la fusion déclenche le déploiement). Ne créer la PR que si
+  l'utilisateur le demande (`gh` peut ne pas être connecté).
 - **Non** → ne rien pousser, et ne pas reposer la question avant le prochain commit.
 - Si aucun remote n'est configuré (`git remote -v` vide), le dire au lieu de proposer le push.
 - L'accord vaut pour ce push seulement, pas pour les suivants.

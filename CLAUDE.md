@@ -1,8 +1,9 @@
 # CelesteDeathTracker
 
 Mod Everest pour Celeste qui envoie chaque mort du joueur à un dashboard web.
-Dépôt Git (branche `main`). Documentation et commentaires en français.
+Dépôt Git, distant `origin` sur GitHub (`matthisRipoche/CelesteDeathTracker`). Documentation et commentaires en français.
 **Chaque commit passe par le skill `commit`** (`.claude/skills/commit/SKILL.md`) : Conventional Commits en français, commits atomiques, build + tests avant.
+**Workflow de branches** : pas de commit direct sur `main` (un push sur `main` lance la CI/CD et le déploiement). Une branche par fonctionnalité (`feat/…`, `fix/…`, `docs/…`, `chore/…`), puis pull request vers `main` : la CI teste, la fusion déploie. Le skill `commit` demande avant chaque push.
 
 ## Objectif et contexte
 
@@ -135,7 +136,7 @@ Le mod envoie en camelCase, tous les champs de `DeathEvent` sont obligatoires (J
 - Le projet mod DOIT cibler la même version .NET que l'Everest installé (`Celeste.runtimeconfig.json`) : sinon erreurs CS1705 à la compilation. `CELESTE_PATH` du `.csproj` pointe vers `D:\steam\...`.
 - Les logs du jeu sont dans `D:\steam\steamapps\common\Celeste\log.txt` (codes d'appairage : ligne `Appairage : saisis le code …`).
 - **CI/CD** : `.github/workflows/ci-cd.yml` (tests API + site sur PR et push ; sur `main` : images GHCR `ghcr.io/<owner>/celeste-death-tracker-{api,web}:sha-…` puis déploiement SSH). Prod : `docker-compose.prod.yml` (se branche sur le Traefik existant du VPS via labels, réseau `frontend` ; PAS de Caddy) + `deploy/backup.sh`. Guide complet : `deploy/README.md`. Le mod C# n'est PAS compilé en CI (DLL du jeu non publiables).
-- Historique : les premiers commits sont en texte libre, puis **Conventional Commits** à partir de `build(web): ajouter ng2-charts…`. Le dépôt GitHub distant est à créer par l'utilisateur (`gh` non connecté). `.env` est ignoré ; `dashboard-legacy/deaths.json` aussi.
+- Historique : les premiers commits sont en texte libre, puis **Conventional Commits** à partir de `build(web): ajouter ng2-charts…`. Le dépôt GitHub distant existe (`gh` non connecté : les PR se créent sur le site). `.env` est ignoré ; `dashboard-legacy/deaths.json` aussi.
 - Avant la prod : `ServerUrl` du mod à passer en `https://<domaine>`, supprimer les comptes de test, mot de passe PostgreSQL fort sur le serveur.
 - **Serveur de production** : VPS 57.129.139.62, domaine `celeste.matthisripoche.com` (DNS déjà en place). Il héberge d'autres applications (portfolio Next.js, vaultwarden, laravel, vue, express) derrière **Traefik v3.7** (conteneur `traefik-traefik-1`, réseau `frontend`) qui possède 80/443 : ne JAMAIS publier 80/443 ni lancer un second reverse proxy. Noms Traefik confirmés (`TRAEFIK_ENTRYPOINT`=websecure, `TRAEFIK_CERTRESOLVER`=ovhcloud — relevés sur les labels de portfolio-next) ; SSH : port 22 inaccessible depuis le poste de développement, port/filtrage IP à confirmer.
 - nginx s'adresse à l'API via l'alias réseau `celeste-api` (pas `api`) car `web` est aussi sur le réseau partagé de Traefik.
