@@ -46,14 +46,15 @@ export function themeColors() {
   const css = getComputedStyle(document.documentElement);
   const get = (name: string, fallback: string) => css.getPropertyValue(name).trim() || fallback;
   return {
-    accent: get('--ds-pink-400', '#f8588c'),
-    info: get('--ds-ice-400', '#66c4e1'),
-    warning: get('--ds-gold-400', '#f2c230'),
-    success: get('--ds-green-400', '#93bd40'),
-    danger: get('--ds-strawberry-500', '#ed4a44'),
-    lavender: get('--ds-lavender-500', '#8479c5'),
-    grid: get('--ds-night-600', '#3b3470'),
-    text: get('--ds-lavender-400', '#9d97d1'),
-    surface: get('--ds-night-900', '#151229'),
+    // Jetons sémantiques : ils suivent le thème clair ou sombre du moment.
+    accent: get('--color-text', '#1b2a2e'),
+    info: get('--color-text', '#1b2a2e'),
+    warning: get('--color-highlight', '#f2d31b'),
+    success: get('--color-success', '#1f7a4d'),
+    danger: get('--color-danger', '#b5382a'),
+    lavender: get('--color-text-muted', '#53646a'),
+    grid: get('--color-border', '#c5cfcb'),
+    text: get('--color-text-muted', '#53646a'),
+    surface: get('--color-bg', '#eef1ee'),
   };
 }

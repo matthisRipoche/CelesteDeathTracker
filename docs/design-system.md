@@ -1,7 +1,12 @@
-# Design system « Basecamp »
+# Design system « Topo »
 
-Système de design du site, posé sur la palette du jeu. Code : `web/src/styles/` ; vitrine :
-`web/src/app/features/design-system/`.
+Système de design du site : un carnet de cordée pour suivre ses tentatives de deathless. Papier glacier
+ou ardoise de nuit, encre de roche, et un seul surligneur, la fraise dorée. Code : `web/src/styles/` ;
+vitrine : `web/src/app/features/design-system/`.
+
+Maquettes de référence : canvas Claude Design « Death Tracker, maquettes » (planche du design system,
+détail d'une face et tableau de bord, en clair et en sombre). Le lien est privé : le demander au
+propriétaire du projet.
 
 ## Voir la vitrine
 
@@ -13,39 +18,62 @@ La page n'existe **qu'en développement** : en production, `dev-routes.ts` est r
 `public/local-assets/` est exclu des assets. Vérifié : ni la page ni les sprites n'entrent dans `dist/`.
 
 ## Principes
-1. **Lisible avant tout** : contrastes AA, 12 px minimum, focus toujours visible.
-2. **Pixel avec parcimonie** : la police pixel est réservée aux grands chiffres (≥ 24 px), aux codes et à la
-   marque. Elle devient illisible en petit (testé).
-3. **Franc et tactile** : angles nets, ombres dures sans flou, boutons qui s'enfoncent.
+1. **Lisible avant tout** : contrastes d'au moins 4,5:1 dans les deux thèmes, texte de 13 px minimum,
+   cibles de 44 px, focus toujours visible (double anneau encre puis surligneur).
+2. **Des filets, pas des boîtes** : pas de cartes ni d'ombres. Un trait épais ouvre chaque section, le titre
+   porte l'information. Les chiffres sont étroits et très gras.
+3. **Un seul surligneur doré par écran** : il marque l'élément à regarder (la room fatale, le direct).
+   Jamais de décoration.
+4. **Les couleurs ont un sens** : vert = sommet (réussite), rouge = chute (échec). Un résultat se lit aussi
+   par une forme et un mot, jamais par la couleur seule.
+5. **Celeste par ses objets, pas par son décor** : la fraise dorée marque un deathless réussi, l'explosion
+   de pixels une mort, un glyphe pixel par chapitre. Ces motifs sont dessinés pour ce site.
+6. **Rédaction** : phrases en minuscules, voix active, un bouton dit ce qu'il fait. Ni majuscules espacées,
+   ni flèche collée aux liens, ni point médian entre les mots.
 
 ## Jetons (`tokens.css`)
-- **Palette brute** `--ds-*` : échantillonnée sur les sprites du jeu (logo lavande/givre `#9d97d1`/`#66c4e1`,
-  fraise `#ed4a44`, dash `#f8588c`, cristal `#93bd40`). Ne s'utilise jamais dans un composant.
-- **Sémantique** `--color-*` : `bg`, `surface`, `border`, `text`, `accent`, `info`, `success`, `warning`,
-  `danger`. C'est ce que les composants consomment ; un autre thème = redéfinir ces jetons.
-- Typographie, espacement (base 4 px), angles, ombres, durées (`prefers-reduced-motion` respecté).
+- **Palette brute** `--ds-*` : papier `#eef1ee`, encre `#1b2a2e`, granit `#53646a`, trait `#c5cfcb`, sommet
+  `#1f7a4d`, chute `#b5382a`, fraise dorée `#f2d31b` ; ardoise `#0f181b`, neige `#e7edea`, brume `#9db0ac`,
+  sommet clair `#4fbf86`, chute claire `#f0705f`. Ne s'utilise jamais dans un composant.
+- **Sémantique** `--color-*` : `bg`, `surface`, `surface-raised`, `border`, `border-strong`, `text`,
+  `text-muted`, `accent`, `highlight`, `success`, `danger`, `chrome` (barre du haut). C'est ce que les
+  composants consomment.
+- **Thèmes** : le clair est le défaut. Le sombre suit `prefers-color-scheme: dark` ; on le force avec
+  `data-theme="dark"` (ou `"light"`) sur `<html>`. Clair et sombre redéfinissent **uniquement** les jetons
+  sémantiques : aucun composant n'a de couleur propre.
+- Typographie, espacement (base 4 px), angles (3 px), durées (`prefers-reduced-motion` respecté).
 
 ## Typographie
 | Rôle | Police | Licence |
 |---|---|---|
-| Texte, titres | **Outfit** (variable) | OFL-1.1 |
-| Chiffres, codes, marque | **Pixelify Sans** (variable) | OFL-1.1 |
+| Texte, titres, chiffres | **Archivo** (variable, axe de largeur) | OFL-1.1 |
 
-Hébergées avec le site (`@fontsource-variable/*`) : aucune requête vers un service tiers.
-La police du jeu, **Renogare** (confirmée par `Content/Dialog/Fonts/renogare*.fnt`), a une licence
-« custom » : non redistribuable ici, d'où Outfit, de caractère proche.
+Deux largeurs d'une même famille : normale pour le texte, étroite (`font-stretch: 62 %`) et graisse 800
+pour les chiffres et titres d'affichage (`.ds-display`, `.ds-stat__value`). Hébergée avec le site
+(`@fontsource-variable/archivo/wdth.css`) : aucune requête vers un service tiers.
+La police du jeu, **Renogare**, a une licence « custom » : non redistribuable ici.
 
 ## Composants (`ds.css`)
-Bouton (primaire, secondaire, discret, danger, tailles, chargement), champ et saisie de code, carte,
-indicateur chiffré, badge, alerte, tableau, barre de classement, barre de navigation (haut + barre du bas
-mobile), onglets, état vide, squelette de chargement, code d'association, toast.
+Bouton (primaire, secondaire, discret, danger, tailles, chargement), champ et saisie de code, section
+(`.ds-card`, sans boîte), indicateur chiffré, badge, face de map (`.ds-face`), alerte, tableau, barre de
+classement, barre du haut et barre du bas mobile, onglets, état vide, squelette de chargement, code
+d'association, toast, surligneur (`.ds-mark`) et motifs pixel (`.ds-px-*`).
+
+## Motifs de Celeste
+Dessinés pour ce site en SVG pixel (voir les maquettes) :
+- **Fraise dorée** : un deathless réussi (dans le jeu, elle se gagne en finissant un chapitre sans mourir).
+- **Explosion de pixels** (huit carrés en couronne) : une tentative qui se termine par une mort.
+- **Glyphe de chapitre** : une silhouette pixel par map.
+- **Silhouette de montagne** : décor de la barre du haut.
+- **Cristal de dash** : réservé au futur suivi des dashes.
 
 ## Navigation cible
-Barre en haut sur ordinateur (marque · Tableau de bord · Appareils · Associer un jeu · compte),
-remplacée par une barre du bas sur mobile. Trois destinations : pas de menu hamburger.
+Barre en haut sur ordinateur (marque · Tableau de bord · Maps · Historique · Direct · compte), remplacée
+par une barre du bas sur mobile, plus un bandeau doré quand une tentative est en cours. Voir
+`docs/arborescence-pages.md`.
 
-## Assets du jeu : ce qu'il y a
-Voir `tools/celeste-assets/README.md`. Atlas `Gui` (422 sprites : cœurs, fraises, icônes de chapitres,
-logo, touches de manette/clavier, papiers), `Gameplay` (6 824 sprites : Madeline, Badeline, Theo, objets,
-décors), `Journal`, `FileSelect`, `Memo`. Aucune politique de contenu de fans publiée par le studio n'a
-été trouvée : considérer ces assets comme protégés.
+## Assets du jeu
+Voir `tools/celeste-assets/README.md`. Les sprites sont © Extremely OK Games, aucune politique de
+contenu de fans n'a été trouvée : ils restent **locaux** (`public/local-assets/`, hors Git, hors Docker,
+hors production) et ne sont jamais publiés, y compris dans des maquettes hébergées. Le composant
+`app-sprite` les affiche en développement et disparaît s'ils sont absents.

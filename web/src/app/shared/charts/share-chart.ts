@@ -46,6 +46,8 @@ export class ShareChart {
 
   protected readonly options: ChartConfiguration<'doughnut'>['options'] = {
     responsive: true,
+    // Pas d'animation de redessin : une mort qui arrive met le graphique à jour sans le faire « rejouer ».
+    animation: false,
     maintainAspectRatio: false,
     cutout: '62%',
     plugins: {
