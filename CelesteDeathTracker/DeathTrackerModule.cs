@@ -21,7 +21,9 @@ public class DeathTrackerModule : EverestModule
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        // Les champs facultatifs absents (mapName, reason…) ne sont pas envoyés
+        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
     };
 
     public override Type SettingsType => typeof(DeathTrackerSettings);
@@ -51,6 +53,9 @@ public class DeathTrackerModule : EverestModule
     internal static void OnServerChanged()
     {
         if (!_ready) return;
+        // La tentative en cours a été annoncée à l'ancien serveur seulement : la suivante repartira
+        // proprement (avec son événement de départ) sur le nouveau.
+        _attempt = null;
         PairingManager.Stop();
         PairingManager.ClearView();
         PairingManager.EnsureStarted();
@@ -63,9 +68,10 @@ public class DeathTrackerModule : EverestModule
 
     public override void Load()
     {
-        On.Celeste.Player.Die  += OnPlayerDie;
-        On.Celeste.Level.Begin += OnLevelBegin;
-        On.Celeste.Level.End   += OnLevelEnd;
+        On.Celeste.Player.Die += OnPlayerDie;
+        Everest.Events.Level.OnLoadLevel   += OnLoadLevel;
+        Everest.Events.Level.OnTransitionTo += OnTransitionTo;
+        Everest.Events.Level.OnExit        += OnLevelExit;
         Logger.Log(LogLevel.Info, "DeathTracker", "Death Tracker chargé !");
     }
 
@@ -88,10 +94,12 @@ public class DeathTrackerModule : EverestModule
 
     public override void Unload()
     {
-        On.Celeste.Player.Die  -= OnPlayerDie;
-        On.Celeste.Level.Begin -= OnLevelBegin;
-        On.Celeste.Level.End   -= OnLevelEnd;
+        On.Celeste.Player.Die -= OnPlayerDie;
+        Everest.Events.Level.OnLoadLevel   -= OnLoadLevel;
+        Everest.Events.Level.OnTransitionTo -= OnTransitionTo;
+        Everest.Events.Level.OnExit        -= OnLevelExit;
 
+        _attempt = null;
         _ready = false;
         PairingManager.Stop();
         if (_overlay is not null)
@@ -174,8 +182,14 @@ public class DeathTrackerModule : EverestModule
     {
         var result = orig(self, direction, evenIfInvincible, registerStats);
 
-        if (!Settings.Enabled || result is null || self.Scene is not Level level)
+        // registerStats = false : le jeu ne compte pas cette mort dans ses statistiques (mort
+        // « technique »), on ne l'envoie pas non plus.
+        if (!Settings.Enabled || !registerStats || result is null || self.Scene is not Level level)
             return result!;
+
+        // La tentative est normalement déjà ouverte par OnLoadLevel ; sinon (mod activé en cours
+        // de partie) on la démarre ici pour que la mort lui soit rattachée.
+        var attempt = EnsureAttempt(level);
 
         _ = PostAsync("/api/ingest/deaths", new DeathEvent
         {
@@ -186,36 +200,172 @@ public class DeathTrackerModule : EverestModule
             DeathY        = (int)self.Position.Y,
             TotalDeaths   = SaveData.Instance?.TotalDeaths ?? 0,
             SessionDeaths = level.Session.Deaths,
-            TimeInRoomMs  = level.Session.Time / 10_000L
+            TimeInRoomMs  = level.Session.Time / 10_000L,
+            AttemptId     = attempt?.Id,
+            Side          = attempt?.Side,
+            SaveSlot      = attempt?.SaveSlot
         });
 
         return result;
     }
 
-    private static void OnLevelBegin(On.Celeste.Level.orig_Begin orig, Level self)
+    // ------------------------------------------------------------------ tentatives
+
+    /// <summary>
+    /// Une tentative = une partie sur une face de map, de l'entrée à la sortie (terminée, recommencée,
+    /// abandonnée ou quittée). Une mort NE la termine PAS : le jeu recharge le niveau mais la partie
+    /// continue, c'est le serveur qui sait qu'un deathless est perdu à la première mort.
+    /// </summary>
+    /// <summary>
+    /// La tentative en cours, avec les dernières valeurs vues de la session du jeu. Le redémarrage
+    /// rapide (touche « recommencer » après une mort) ne déclenche PAS OnExit et réutilise le même
+    /// objet Session en remettant son temps et ses morts à zéro : le seul signal fiable est donc qu'une
+    /// de ces valeurs RECULE. Un respawn après une mort les laisse monter.
+    /// </summary>
+    private sealed class AttemptContext
     {
-        orig(self);
-        if (!Settings.Enabled) return;
-        _ = PostAsync("/api/ingest/events", new SessionEvent
+        public AttemptContext(string id, string chapter, string side, int? saveSlot, Session session)
         {
-            Type      = "session_start",
-            Chapter   = self.Session.Area.GetSID(),
-            Room      = self.Session.Level,
-            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+            Id = id; Chapter = chapter; Side = side; SaveSlot = saveSlot;
+            Session = session;
+            Touch(session);
+        }
+
+        public string Id { get; }
+        public string Chapter { get; }
+        public string Side { get; }
+        public int? SaveSlot { get; }
+        public Session Session { get; }
+        public long LastTimeTicks { get; private set; }
+        public int LastDeaths { get; private set; }
+        public string LastRoom { get; private set; } = "";
+
+        /// <summary>Mémorise l'état de la session pour pouvoir clore la tentative avec ses vraies valeurs.</summary>
+        public void Touch(Session session)
+        {
+            LastTimeTicks = session.Time;
+            LastDeaths = session.Deaths;
+            LastRoom = session.Level ?? "";
+        }
+
+        public bool WentBackwards(Session session) =>
+            !ReferenceEquals(session, Session) || session.Time < LastTimeTicks || session.Deaths < LastDeaths;
+    }
+
+    private static volatile AttemptContext? _attempt;
+
+    private static string SideOf(AreaKey area) => area.Mode switch
+    {
+        AreaMode.BSide => "B",
+        AreaMode.CSide => "C",
+        _ => "A"
+    };
+
+    private static long Now() => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+    /// <summary>Nom officiel de la map tel qu'affiché dans le jeu (traduit), ou null s'il est introuvable.</summary>
+    private static string? OfficialMapName(Session session)
+    {
+        try
+        {
+            var key = AreaData.Get(session)?.Name;
+            if (string.IsNullOrEmpty(key)) return null;
+            var name = Dialog.Clean(key);
+            return string.IsNullOrWhiteSpace(name) ? null : name;
+        }
+        catch (Exception ex)
+        {
+            Logger.Log(LogLevel.Verbose, "DeathTracker", $"Nom de map introuvable : {ex.Message}");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Renvoie la tentative en cours pour ce niveau, en en ouvrant une si besoin (premier niveau chargé,
+    /// ou changement de map/face sans passer par une sortie). Les événements portent tous la face et la
+    /// sauvegarde : le serveur reconstruit la tentative même si l'un d'eux se perd.
+    /// </summary>
+    private static AttemptContext? EnsureAttempt(Level level)
+    {
+        if (!Settings.Enabled) return null;
+
+        var session = level.Session;
+        var chapter = session.Area.GetSID();
+        var side = SideOf(session.Area);
+
+        var current = _attempt;
+        var sameMap = current is not null && current.Chapter == chapter && current.Side == side;
+        if (current is not null && sameMap && !current.WentBackwards(session))
+        {
+            current.Touch(session);
+            return current;
+        }
+
+        // Session remise à zéro sur la même face = chapitre recommencé ; autre map ou face sans sortie
+        // intermédiaire = "switched". On clôt l'ancienne avec SES dernières valeurs (room et temps de la
+        // mort, par exemple), pas celles de la session déjà réinitialisée.
+        if (current is not null)
+            SendAttemptEvent("attempt_end", current, current.LastRoom, current.LastTimeTicks,
+                reason: sameMap ? "restart" : "switched");
+
+        var attempt = new AttemptContext(Guid.NewGuid().ToString(), chapter, side, SaveData.Instance?.FileSlot, session);
+        _attempt = attempt;
+
+        SendAttemptEvent("attempt_start", attempt, session.Level, session.Time,
+            mapName: OfficialMapName(session), startedFromBeginning: session.StartedFromBeginning);
+        return attempt;
+    }
+
+    private static void SendAttemptEvent(string type, AttemptContext attempt, string room, long sessionTicks,
+        string? mapName = null, bool? startedFromBeginning = null, string? reason = null)
+    {
+        if (!Settings.Enabled) return;
+        _ = PostAsync("/api/ingest/events", new AttemptEvent
+        {
+            Type                 = type,
+            AttemptId            = attempt.Id,
+            Chapter              = attempt.Chapter,
+            Side                 = attempt.Side,
+            SaveSlot             = attempt.SaveSlot,
+            Room                 = room,
+            Timestamp            = Now(),
+            SessionTimeMs        = sessionTicks / 10_000L,
+            MapName              = mapName,
+            StartedFromBeginning = startedFromBeginning,
+            Reason               = reason
         });
     }
 
-    private static void OnLevelEnd(On.Celeste.Level.orig_End orig, Level self)
+    // Appelé à chaque chargement de niveau (entrée dans la map, respawn après une mort, redémarrage) :
+    // on s'en sert seulement pour ouvrir la tentative, le respawn ne crée rien de plus.
+    private static void OnLoadLevel(Level level, Player.IntroTypes playerIntro, bool isFromLoader)
     {
-        orig(self);
-        if (!Settings.Enabled) return;
-        _ = PostAsync("/api/ingest/events", new SessionEvent
+        EnsureAttempt(level);
+    }
+
+    // Vraie transition d'écran vers une nouvelle room (pas un respawn dans la même room).
+    private static void OnTransitionTo(Level level, LevelData next, Vector2 direction)
+    {
+        var attempt = EnsureAttempt(level);
+        if (attempt is not null)
+            SendAttemptEvent("room_enter", attempt, next.Name, level.Session.Time);
+    }
+
+    private static void OnLevelExit(Level level, LevelExit exit, LevelExit.Mode mode, Session session, HiresSnow snow)
+    {
+        var attempt = _attempt;
+        _attempt = null;
+        if (attempt is null) return;
+
+        var reason = mode switch
         {
-            Type      = "session_end",
-            Chapter   = self.Session.Area.GetSID(),
-            Room      = self.Session.Level,
-            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
-        });
+            LevelExit.Mode.Completed or LevelExit.Mode.CompletedInterlude => "completed",
+            LevelExit.Mode.Restart => "restart",
+            LevelExit.Mode.GoldenBerryRestart => "golden_restart",
+            LevelExit.Mode.SaveAndQuit => "save_and_quit",
+            _ => "give_up"
+        };
+        SendAttemptEvent("attempt_end", attempt, session.Level, session.Time, reason: reason);
     }
 
     private static async Task PostAsync<T>(string path, T data)
@@ -317,13 +467,26 @@ public record DeathEvent
     public int    DeathY        { get; init; }
     public int    TotalDeaths   { get; init; }
     public int    SessionDeaths { get; init; }
-    public long   TimeInRoomMs  { get; init; }
+    public long   TimeInRoomMs  { get; init; }   // temps de la PARTIE (Session.Time), pas de la room
+
+    // Contexte de la tentative (null si le mod a été activé en cours de partie)
+    public string? AttemptId    { get; init; }
+    public string? Side         { get; init; }   // "A", "B" ou "C"
+    public int?    SaveSlot     { get; init; }
 }
 
-public record SessionEvent
+/// <summary>attempt_start, room_enter ou attempt_end (cf. docs/data-model.md).</summary>
+public record AttemptEvent
 {
-    public string Type      { get; init; } = "";
-    public string Chapter   { get; init; } = "";
-    public string Room      { get; init; } = "";
-    public long   Timestamp { get; init; }
+    public string  Type                 { get; init; } = "";
+    public string  AttemptId            { get; init; } = "";
+    public string  Chapter              { get; init; } = "";
+    public string  Side                 { get; init; } = "A";
+    public int?    SaveSlot             { get; init; }
+    public string  Room                 { get; init; } = "";
+    public long    Timestamp            { get; init; }
+    public long    SessionTimeMs        { get; init; }
+    public string? MapName              { get; init; }
+    public bool?   StartedFromBeginning { get; init; }
+    public string? Reason               { get; init; }
 }
