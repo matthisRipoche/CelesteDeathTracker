@@ -1,14 +1,10 @@
 import { Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
-import { catchError, map, of, startWith } from 'rxjs';
 import { countBy, mapName, modName } from '../../core/map-stats';
-import { Death } from '../../core/death.model';
-import { DeathService } from '../../core/death.service';
+import { DeathsLive } from '../../core/deaths-live';
 import { Shell } from '../../shared/shell/shell';
 import { Sprite } from '../../shared/sprite/sprite';
-
-type State = { status: 'loading' } | { status: 'error' } | { status: 'ok'; deaths: Death[] };
 
 /** Liste des maps jouées, triées par nombre de morts. Un clic ouvre le détail (/map?sid=…). */
 @Component({
@@ -18,16 +14,8 @@ type State = { status: 'loading' } | { status: 'error' } | { status: 'ok'; death
   styleUrl: './maps.css',
 })
 export class Maps {
-  private readonly deathService = inject(DeathService);
-
-  protected readonly state = toSignal(
-    this.deathService.getDeaths().pipe(
-      map((deaths): State => ({ status: 'ok', deaths })),
-      catchError(() => of<State>({ status: 'error' })),
-      startWith<State>({ status: 'loading' }),
-    ),
-    { requireSync: true },
-  );
+  // Flux partagé et tenu à jour toutes les 3 s : la liste suit les morts sans recharger la page.
+  protected readonly state = toSignal(inject(DeathsLive).state$, { requireSync: true });
 
   protected readonly maps = computed(() => {
     const s = this.state();

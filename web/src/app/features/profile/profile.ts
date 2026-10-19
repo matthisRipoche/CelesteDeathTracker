@@ -5,7 +5,7 @@ import { RouterLink } from '@angular/router';
 import { catchError, of } from 'rxjs';
 import { AuthService } from '../../core/auth.service';
 import { countBy } from '../../core/map-stats';
-import { DeathService } from '../../core/death.service';
+import { DeathsLive } from '../../core/deaths-live';
 import { TokenService } from '../../core/token.service';
 import { Shell } from '../../shared/shell/shell';
 
@@ -19,10 +19,12 @@ import { Shell } from '../../shared/shell/shell';
 export class Profile {
   protected readonly user = inject(AuthService).user;
 
-  private readonly deaths = toSignal(
-    inject(DeathService).getDeaths().pipe(catchError(() => of([]))),
-    { initialValue: [] },
-  );
+  // Flux partagé et tenu à jour : le résumé suit les morts sans recharger la page.
+  private readonly state = toSignal(inject(DeathsLive).state$, { requireSync: true });
+  private readonly deaths = computed(() => {
+    const s = this.state();
+    return s.status === 'ok' ? s.deaths : [];
+  });
   private readonly tokens = toSignal(
     inject(TokenService).list().pipe(catchError(() => of([]))),
     { initialValue: [] },
