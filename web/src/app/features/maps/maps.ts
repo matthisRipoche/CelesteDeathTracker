@@ -1,29 +1,34 @@
+import { DatePipe } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
-import { countBy, mapName, modName } from '../../core/map-stats';
-import { DeathsLive } from '../../core/deaths-live';
+import { FaceService } from '../../core/face.service';
+import { modOf, shortMapName } from '../../core/format';
+import { livePoll } from '../../core/live-poll';
+import { PxBerry } from '../../shared/pixel/pixel-icons';
 import { Shell } from '../../shared/shell/shell';
-import { Sprite } from '../../shared/sprite/sprite';
 
-/** Liste des maps jouées, triées par nombre de morts. Un clic ouvre le détail (/map?sid=…). */
+/**
+ * Mes maps : une ligne par FACE jouée (une map + A, B ou C), la plus récente d'abord.
+ * Un clic ouvre le détail de la face (/maps/:side?sid=…). Tenu à jour toutes les 3 s.
+ */
 @Component({
   selector: 'app-maps',
-  imports: [RouterLink, Shell, Sprite],
+  imports: [DatePipe, RouterLink, Shell, PxBerry],
   templateUrl: './maps.html',
   styleUrl: './maps.css',
 })
 export class Maps {
-  // Flux partagé et tenu à jour toutes les 3 s : la liste suit les morts sans recharger la page.
-  protected readonly state = toSignal(inject(DeathsLive).state$, { requireSync: true });
+  // inject() doit s'exécuter à la construction du composant, pas plus tard dans la requête.
+  private readonly faceService = inject(FaceService);
 
-  protected readonly maps = computed(() => {
+  protected readonly state = toSignal(livePoll(() => this.faceService.faces()), { requireSync: true });
+
+  protected readonly faces = computed(() => {
     const s = this.state();
-    return s.status === 'ok' ? countBy(s.deaths, (d) => d.chapter) : [];
+    return s.status === 'ok' ? s.data : [];
   });
 
-  protected readonly max = computed(() => this.maps()[0]?.count ?? 1);
-
-  protected readonly mapName = mapName;
-  protected readonly modName = modName;
+  protected readonly title = (f: { sid: string; mapName: string | null }) => f.mapName ?? shortMapName(f.sid);
+  protected readonly mod = modOf;
 }
