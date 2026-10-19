@@ -167,6 +167,7 @@ a:hover { color: var(--ds-ice-300); }
   font-variant-numeric: tabular-nums;
 }
 .ds-stat__value--danger { color: var(--color-danger); }
+.ds-stat__value--info { color: var(--color-info); }
 .ds-stat__delta { font-size: var(--text-sm); color: var(--color-text-muted); }
 
 /* ============ Badge ============ */

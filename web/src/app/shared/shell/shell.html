@@ -1,0 +1,44 @@
+<header class="ds-topbar">
+  <a class="ds-topbar__brand" routerLink="/">
+    <svg width="26" height="22" viewBox="0 0 13 11" shape-rendering="crispEdges" aria-hidden="true">
+      <path fill="var(--ds-lavender-500)" d="M0 11 6 0 8 4 9 3 13 11Z" />
+      <path fill="var(--ds-ice-300)" d="M6 0 7 2 5 2Z" />
+    </svg>
+    Death Tracker
+  </a>
+
+  <nav class="ds-nav" aria-label="Navigation principale">
+    @for (l of links; track l.path) {
+      <a
+        class="ds-nav__link"
+        [routerLink]="l.path"
+        routerLinkActive
+        #rla="routerLinkActive"
+        [routerLinkActiveOptions]="{ exact: l.exact }"
+        [attr.aria-current]="rla.isActive ? 'page' : null"
+      >{{ l.label }}</a>
+    }
+  </nav>
+
+  <span class="ds-topbar__spacer"></span>
+
+  <a class="user ds-muted" routerLink="/profile">{{ user()?.email }}</a>
+  <button type="button" class="ds-btn ds-btn--sm" (click)="logout()">Déconnexion</button>
+</header>
+
+<div class="page">
+  <ng-content />
+</div>
+
+<nav class="ds-tabbar mobile-tabbar" aria-label="Navigation principale (mobile)">
+  @for (l of links; track l.path) {
+    <a
+      class="ds-tabbar__item"
+      [routerLink]="l.path"
+      routerLinkActive
+      #rlb="routerLinkActive"
+      [routerLinkActiveOptions]="{ exact: l.exact }"
+      [attr.aria-current]="rlb.isActive ? 'page' : null"
+    >{{ l.label }}</a>
+  }
+</nav>

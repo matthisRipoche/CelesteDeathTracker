@@ -1,0 +1,23 @@
+:host { display: block; min-height: 100vh; }
+
+.page {
+  width: min(100% - 2 * var(--space-5), var(--content-width));
+  margin: var(--space-6) auto var(--space-8);
+  display: grid;
+  gap: var(--space-5);
+}
+
+.user { font-size: var(--text-sm); }
+
+.mobile-tabbar {
+  display: none;
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 20;
+}
+
+@media (max-width: 720px) {
+  .mobile-tabbar { display: grid; }
+  .page { margin-bottom: 5rem; }
+  .user { display: none; }
+}
