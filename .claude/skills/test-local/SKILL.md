@@ -51,6 +51,12 @@ Un port déjà pris par une ancienne instance du projet (`docker compose ps`) se
 docker compose up -d --build
 ```
 
+**Ne reconstruire qu'un service** : `docker compose up -d --build --no-deps web` (ou `api`). Sans `--no-deps`,
+`up --build web` reconstruit aussi `api` (dont `web` dépend), et depuis les sources de la branche courante : sur
+une branche qui n'a pas encore les dernières migrations, l'API redémarre avec un ancien code (le log dit
+`Schema "public" has a version (N) that is newer than the latest available migration`) et refuse les nouveaux
+événements du mod (400). Toujours vérifier la branche courante avant de reconstruire.
+
 Attendre que l'API soit saine (Flyway applique les migrations au démarrage, donc le premier démarrage
 après un changement de schéma prend quelques secondes de plus) :
 

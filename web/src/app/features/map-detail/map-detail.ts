@@ -2,15 +2,12 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { catchError, map, of, startWith } from 'rxjs';
+import { map } from 'rxjs';
 import { countBy, mapName, modName } from '../../core/map-stats';
-import { Death } from '../../core/death.model';
-import { DeathService } from '../../core/death.service';
+import { DeathsLive } from '../../core/deaths-live';
 import { Shell } from '../../shared/shell/shell';
 import { DeathsPerDay } from '../../shared/charts/deaths-per-day';
 import { PositionsChart } from '../../shared/charts/positions-chart';
-
-type State = { status: 'loading' } | { status: 'error' } | { status: 'ok'; deaths: Death[] };
 
 /** Détail d'une map : le SID vient du paramètre de requête `sid` (il contient des « / »). */
 @Component({
@@ -20,21 +17,13 @@ type State = { status: 'loading' } | { status: 'error' } | { status: 'ok'; death
   styleUrl: './map-detail.css',
 })
 export class MapDetail {
-  private readonly deathService = inject(DeathService);
-
   protected readonly sid = toSignal(
     inject(ActivatedRoute).queryParamMap.pipe(map((p) => p.get('sid') ?? '')),
     { requireSync: true },
   );
 
-  private readonly all = toSignal(
-    this.deathService.getDeaths().pipe(
-      map((deaths): State => ({ status: 'ok', deaths })),
-      catchError(() => of<State>({ status: 'error' })),
-      startWith<State>({ status: 'loading' }),
-    ),
-    { requireSync: true },
-  );
+  // Flux partagé et tenu à jour toutes les 3 s : le détail suit les morts sans recharger la page.
+  private readonly all = toSignal(inject(DeathsLive).state$, { requireSync: true });
 
   protected readonly status = computed(() => this.all().status);
 
