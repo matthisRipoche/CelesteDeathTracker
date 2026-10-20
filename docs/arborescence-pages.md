@@ -28,7 +28,7 @@ les tentatives deathless**, par face de map. L'unité n'est plus la mort mais la
 /maps/:side/:room?sid=      Détail d'une room
 /attempts                    Historique des tentatives                 (filtres)
 /attempts/:id                Détail d'une tentative
-/live                        Direct
+/live                        Direct (fait)
 
 /account                     Compte
 /account/devices             Appareils                                 (l'ancien /tokens)

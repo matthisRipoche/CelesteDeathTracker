@@ -50,6 +50,7 @@ Celeste (jeu) ──[mod C#]──HTTP POST──▶ dashboard (Express | Flask)
 | `web/` | **Front Angular 20** (CLI 20 car Node 24.12 < 24.15 exigé par le CLI récent). Dashboard v1 : `death.model.ts`, `death.service.ts`, `app.ts/html/css`. Stats calculées côté client depuis `GET /api/deaths`, poll 3 s via `toSignal(timer…)`. |
 | `dashboard-legacy/` | **OBSOLÈTE** : ancien prototype Express/Flask + `deaths.json`. Ne pas lancer avec `api/` (même port 5000). |
 | `docs/data-model.md` | Contrat de données `DeathEvent` / `AttemptEvent` / SID. À lire avant de toucher aux payloads. |
+| `docs/live-session.md` | Live de session : définition d'une session (30 min, pause tolérée dans la map), API SSE, réglages nginx/proxys, limites. |
 | `docs/donnees-du-jeu.md` | Sens de chaque champ envoyé par le jeu, limites, données manquantes, évolutions futures (cause de mort, dashes, bornes des rooms). Le site vise le **deathless par face de map**. |
 | `docs/auth-and-tokens.md` | Auth du site vs mod, cycle de vie et stockage des tokens d'API, règles de sécurité. |
 
@@ -86,6 +87,8 @@ Tests : Karma/Jasmine côté `web/` (2 tests) et un test de contexte Spring dans
 Navigateur (session cookie + CSRF) :
 - `POST /api/auth/register` · `POST /api/auth/login` · `POST /api/auth/logout` · `GET /api/auth/me`
 - `GET /api/deaths` : uniquement les morts du compte connecté
+- `GET /api/faces` (une ligne par face jouée) · `GET /api/faces/detail?sid=&side=` (détail d'une face) : statistiques de tentatives, le SID passe en paramètre de requête
+- `GET /api/live` (état courant) · `GET /api/live/stream` (**SSE** : `snapshot` à l'ouverture puis à chaque événement du jeu, `ping` toutes les 15 s) : tentative en cours et statistiques de la session. Réservé à la session de connexion. Voir `docs/live-session.md`
 - `GET /api/tokens` · `POST /api/tokens` {label} (renvoie le token en clair UNE fois) · `DELETE /api/tokens/{id}` (révoque)
 
 Mod C# (`Authorization: Bearer cdt_...`, sans session ni CSRF, chaîne de sécurité séparée) :
