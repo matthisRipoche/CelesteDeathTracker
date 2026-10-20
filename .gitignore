@@ -19,6 +19,8 @@ web/.vscode/
 # Mod C#
 CelesteDeathTracker/bin/
 CelesteDeathTracker/obj/
+CelesteDeathTracker.Tests/bin/
+CelesteDeathTracker.Tests/obj/
 # DLL de sauvegarde créées pendant le déploiement du mod
 CelesteDeathTracker/*.previous
 CelesteDeathTracker/*.steam-previous
