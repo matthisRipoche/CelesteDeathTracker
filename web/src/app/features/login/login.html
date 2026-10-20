@@ -11,17 +11,20 @@
       </p>
     </div>
 
-    <div class="ds-tabs" role="tablist">
-      <button type="button" class="ds-tab" role="tab" [attr.aria-selected]="mode() === 'login'" (click)="setMode('login')">Connexion</button>
-      <button type="button" class="ds-tab" role="tab" [attr.aria-selected]="mode() === 'register'" (click)="setMode('register')">Inscription</button>
+    <!-- Deux boutons bascule (aria-pressed) et non des onglets : il n'y a pas de panneaux distincts,
+         c'est le même formulaire qui change de rôle. -->
+    <div class="ds-tabs" role="group" aria-label="Se connecter ou créer un compte">
+      <button type="button" class="ds-tab" [attr.aria-pressed]="mode() === 'login'" (click)="setMode('login')">Connexion</button>
+      <button type="button" class="ds-tab" [attr.aria-pressed]="mode() === 'register'" (click)="setMode('register')">Inscription</button>
     </div>
 
     <div class="ds-field">
       <label class="ds-label" for="email">Email</label>
       <input id="email" class="ds-input" type="email" formControlName="email" autocomplete="email"
-        [attr.aria-invalid]="form.controls.email.touched && form.controls.email.invalid" />
+        [attr.aria-invalid]="form.controls.email.touched && form.controls.email.invalid"
+        [attr.aria-describedby]="form.controls.email.touched && form.controls.email.invalid ? 'email-error' : null" />
       @if (form.controls.email.touched && form.controls.email.invalid) {
-        <span class="ds-error field-error">Email invalide.</span>
+        <span id="email-error" class="ds-error field-error">Email invalide.</span>
       }
     </div>
 
@@ -29,17 +32,19 @@
       <label class="ds-label" for="password">Mot de passe</label>
       <input id="password" class="ds-input" type="password" formControlName="password"
         [attr.autocomplete]="mode() === 'login' ? 'current-password' : 'new-password'"
-        [attr.aria-invalid]="form.controls.password.touched && form.controls.password.invalid" />
+        [attr.aria-invalid]="form.controls.password.touched && form.controls.password.invalid"
+        aria-describedby="password-help" />
+      <!-- Aide ou erreur : un seul des deux est affiché, sous le même id. -->
       @if (form.controls.password.touched && form.controls.password.invalid) {
-        <span class="ds-error field-error">8 caractères minimum.</span>
+        <span id="password-help" class="ds-error field-error">8 caractères minimum.</span>
       } @else {
-        <span class="ds-hint">8 caractères minimum.</span>
+        <span id="password-help" class="ds-hint">8 caractères minimum.</span>
       }
     </div>
 
     @if (error(); as message) {
       <div class="ds-alert ds-alert--danger" role="alert">
-        <span class="ds-alert__icon">!</span>
+        <span class="ds-alert__icon" aria-hidden="true">!</span>
         <p>{{ message }}</p>
       </div>
     }

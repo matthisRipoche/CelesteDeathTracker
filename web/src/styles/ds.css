@@ -337,7 +337,8 @@ a.ds-card:hover { background: var(--color-surface-raised); color: var(--color-te
   border: 0; border-bottom: 3px solid transparent;
   font: 600 var(--text-sm) var(--font-sans); cursor: pointer;
 }
-.ds-tab[aria-selected='true'] { color: var(--color-text); border-bottom-color: var(--color-text); }
+.ds-tab[aria-selected='true'],
+.ds-tab[aria-pressed='true'] { color: var(--color-text); border-bottom-color: var(--color-text); }
 
 /* ============ États vides, chargement ============ */
 .ds-empty {

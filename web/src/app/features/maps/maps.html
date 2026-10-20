@@ -10,7 +10,7 @@
     }
     @case ('error') {
       <div class="ds-alert ds-alert--danger" role="alert">
-        <span class="ds-alert__icon">!</span>
+        <span class="ds-alert__icon" aria-hidden="true">!</span>
         <p>Impossible de charger tes maps. Réessai automatique toutes les 3 secondes.</p>
       </div>
     }
@@ -25,7 +25,7 @@
           @for (f of faces(); track f.sid + f.side) {
             <li>
               <a class="face" [routerLink]="['/maps', f.side.toLowerCase()]" [queryParams]="{ sid: f.sid }">
-                <span class="ds-face" [class.ds-face--b]="f.side === 'B'" [class.ds-face--c]="f.side === 'C'" [attr.aria-label]="'Face ' + f.side">{{ f.side }}</span>
+                <span class="ds-face" [class.ds-face--b]="f.side === 'B'" [class.ds-face--c]="f.side === 'C'"><span class="ds-sr-only">Face </span>{{ f.side }}</span>
                 <span class="map">
                   <span class="ds-display name">{{ title(f) }}</span>
                   <span class="mod">{{ mod(f.sid) }}</span>

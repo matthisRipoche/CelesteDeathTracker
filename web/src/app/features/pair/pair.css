@@ -5,3 +5,6 @@
 .info dt { color: var(--color-text-muted); font-size: var(--text-sm); }
 .info dd { margin: 0; }
 .ds-code { font-size: var(--text-xl); }
+
+/* Titres d'étape : reçoivent le focus par script seulement (voir goTo), pas de contour. */
+h2[tabindex='-1']:focus { outline: none; }

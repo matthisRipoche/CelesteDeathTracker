@@ -116,7 +116,6 @@ export class FaceDetailPage {
     return crux ? `${sentence} La room ${crux} concentre ${percent(this.cruxShare())} des tentatives.` : sentence;
   });
 
-  protected readonly faceLabel = computed(() => `Face ${this.side()}`);
   protected readonly roomCount = computed(() => this.detail()?.rooms.length ?? 0);
 
   protected readonly fmt = formatDuration;

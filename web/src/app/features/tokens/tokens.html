@@ -18,7 +18,7 @@
     <section class="ds-card ds-card--accent ds-stack" role="status">
       <h2>Token « {{ created.label }} » créé</h2>
       <div class="ds-alert ds-alert--warning">
-        <span class="ds-alert__icon">!</span>
+        <span class="ds-alert__icon" aria-hidden="true">!</span>
         <p>Copie-le maintenant : il ne sera <strong>plus jamais affiché</strong>.</p>
       </div>
       <code class="token">{{ created.token }}</code>
@@ -32,15 +32,17 @@
   <section class="ds-card ds-stack">
     <h2 class="ds-card__title">Nouveau token (usage avancé)</h2>
     <form class="ds-row" [formGroup]="form" (ngSubmit)="create()" novalidate>
-      <input class="ds-input name" type="text" formControlName="label" placeholder="Nom (ex. PC fixe)" maxlength="100" aria-label="Nom du token" />
+      <input class="ds-input name" type="text" formControlName="label" placeholder="Nom (ex. PC fixe)" maxlength="100" aria-label="Nom du token"
+        [attr.aria-invalid]="form.controls.label.touched && form.controls.label.invalid"
+        [attr.aria-describedby]="form.controls.label.touched && form.controls.label.invalid ? 'label-error' : null" />
       <button type="submit" class="ds-btn ds-btn--primary">Créer</button>
     </form>
     @if (form.controls.label.touched && form.controls.label.invalid) {
-      <span class="ds-error">Donne un nom à ce token.</span>
+      <span id="label-error" class="ds-error">Donne un nom à ce token.</span>
     }
     @if (error(); as message) {
       <div class="ds-alert ds-alert--danger" role="alert">
-        <span class="ds-alert__icon">!</span>
+        <span class="ds-alert__icon" aria-hidden="true">!</span>
         <p>{{ message }}</p>
       </div>
     }

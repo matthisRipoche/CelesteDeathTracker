@@ -1,6 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, inject, signal } from '@angular/core';
+import { Component, ElementRef, Injector, afterNextRender, inject, signal, viewChild } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Shell } from '../../shared/shell/shell';
@@ -17,6 +17,8 @@ type Step = 'enter' | 'confirm' | 'done' | 'denied';
 })
 export class Pair {
   private readonly pairing = inject(PairingService);
+  private readonly injector = inject(Injector);
+  private readonly stepTitle = viewChild<ElementRef<HTMLElement>>('stepTitle');
 
   protected readonly step = signal<Step>('enter');
   protected readonly request = signal<PairingRequestInfo | null>(null);
@@ -36,27 +38,37 @@ export class Pair {
     }
     this.run(this.pairing.lookup(this.form.getRawValue().code.trim()), (info) => {
       this.request.set(info);
-      this.step.set('confirm');
+      this.goTo('confirm');
     });
   }
 
   protected approve(): void {
     const req = this.request();
     if (!req) return;
-    this.run(this.pairing.approve(req.userCode), () => this.step.set('done'));
+    this.run(this.pairing.approve(req.userCode), () => this.goTo('done'));
   }
 
   protected deny(): void {
     const req = this.request();
     if (!req) return;
-    this.run(this.pairing.deny(req.userCode), () => this.step.set('denied'));
+    this.run(this.pairing.deny(req.userCode), () => this.goTo('denied'));
   }
 
   protected restart(): void {
     this.form.reset();
     this.request.set(null);
     this.error.set(null);
-    this.step.set('enter');
+    this.goTo('enter');
+  }
+
+  /**
+   * Le bouton qui a déclenché le changement disparaît avec l'étape : sans cela, le focus clavier
+   * retomberait en haut de la page. On le place sur le titre de la nouvelle étape, que le lecteur
+   * d'écran annonce.
+   */
+  private goTo(step: Step): void {
+    this.step.set(step);
+    afterNextRender(() => this.stepTitle()?.nativeElement.focus(), { injector: this.injector });
   }
 
   private run<T>(source: Observable<T>, onSuccess: (value: T) => void): void {

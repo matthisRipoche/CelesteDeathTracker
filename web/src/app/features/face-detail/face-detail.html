@@ -15,7 +15,7 @@
         </div>
       } @else {
         <div class="ds-alert ds-alert--danger" role="alert">
-          <span class="ds-alert__icon">!</span>
+          <span class="ds-alert__icon" aria-hidden="true">!</span>
           <p>Impossible de charger cette face. Réessai automatique toutes les 3 secondes.</p>
         </div>
       }
@@ -25,7 +25,7 @@
         <header class="head">
           <div class="title-row">
             <h1 class="ds-display name">{{ title() }}</h1>
-            <span class="ds-face" [class.ds-face--b]="d.side === 'B'" [class.ds-face--c]="d.side === 'C'" [attr.aria-label]="faceLabel()">{{ d.side }}</span>
+            <span class="ds-face" [class.ds-face--b]="d.side === 'B'" [class.ds-face--c]="d.side === 'C'"><span class="ds-sr-only">Face </span>{{ d.side }}</span>
             <span class="ds-badge">{{ mod() }}</span>
           </div>
           <p class="lead">{{ intro() }}</p>
@@ -67,14 +67,14 @@
                   <span class="room-name">{{ r.room }}</span>
                   <span class="node" aria-hidden="true"></span>
                   <span class="bar-track"><span class="bar" [style.width.%]="r.width"></span></span>
-                  <span class="ds-display count" [attr.aria-label]="r.endings + ' tentatives s\'arrêtent en room ' + r.room">{{ r.endings }}</span>
+                  <span class="ds-display count">{{ r.endings }}<span class="ds-sr-only"> {{ r.endings > 1 ? 'tentatives s’arrêtent' : 'tentative s’arrête' }} ici</span></span>
                 </li>
               }
               <li class="room summit">
                 <span class="room-name win">Fraise</span>
                 <span class="node-berry"><app-px-berry [size]="22" /></span>
                 <span class="bar-track"><span class="bar win-bar" [style.width.%]="clearsWidth()"></span></span>
-                <span class="ds-display count win" [attr.aria-label]="d.clears + ' deathless réussis'">{{ d.clears }}</span>
+                <span class="ds-display count win">{{ d.clears }}<span class="ds-sr-only"> {{ d.clears > 1 ? 'deathless réussis' : 'deathless réussi' }}</span></span>
               </li>
             </ul>
           </div>

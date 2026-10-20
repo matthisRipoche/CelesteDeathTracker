@@ -19,7 +19,7 @@
 
   @if (state().status === 'error') {
     <div class="ds-alert ds-alert--danger" role="alert">
-      <span class="ds-alert__icon">!</span>
+      <span class="ds-alert__icon" aria-hidden="true">!</span>
       <div>
         <p class="ds-alert__title">Impossible de joindre l'API</p>
         <p>Vérifie qu'elle tourne (<code>docker compose ps</code>).</p>

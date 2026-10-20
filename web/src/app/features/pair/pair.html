@@ -8,13 +8,15 @@
     @switch (step()) {
       @case ('enter') {
         <section class="ds-card ds-stack">
-          <h2>Saisis le code affiché dans ton jeu</h2>
+          <h2 #stepTitle tabindex="-1">Saisis le code affiché dans ton jeu</h2>
           <p class="ds-muted">
             Lance Celeste avec le mod Death Tracker : un bandeau en haut de l'écran affiche un code
             du type <strong>K7QM-4XRD</strong>. Il est valable 10 minutes.
           </p>
           <form class="ds-stack" [formGroup]="form" (ngSubmit)="check()" novalidate>
+            <label class="ds-label" for="pair-code">Code d'association</label>
             <input
+              id="pair-code"
               class="ds-input ds-input--code"
               type="text"
               formControlName="code"
@@ -23,10 +25,11 @@
               autocomplete="off"
               autocapitalize="characters"
               spellcheck="false"
-              aria-label="Code d'association"
+              [attr.aria-invalid]="form.controls.code.touched && form.controls.code.invalid"
+              [attr.aria-describedby]="form.controls.code.touched && form.controls.code.invalid ? 'code-error' : null"
             />
             @if (form.controls.code.touched && form.controls.code.invalid) {
-              <span class="ds-error">Le code comporte 8 caractères.</span>
+              <span id="code-error" class="ds-error">Le code comporte 8 caractères.</span>
             }
             <button type="submit" class="ds-btn ds-btn--primary" [disabled]="busy()">Continuer</button>
           </form>
@@ -35,7 +38,7 @@
 
       @case ('confirm') {
         <section class="ds-card ds-stack">
-          <h2>Autoriser cet appareil ?</h2>
+          <h2 #stepTitle tabindex="-1">Autoriser cet appareil ?</h2>
           @if (request(); as req) {
             <dl class="info">
               <dt>Appareil</dt><dd>{{ req.deviceName }}</dd>
@@ -44,7 +47,7 @@
             </dl>
           }
           <div class="ds-alert ds-alert--warning">
-            <span class="ds-alert__icon">!</span>
+            <span class="ds-alert__icon" aria-hidden="true">!</span>
             <p>
               Autorise seulement si <strong>c'est toi</strong> qui viens de lancer le jeu et que ce
               code est bien celui affiché à l'écran. Cet appareil pourra envoyer des morts sur ton compte.
@@ -59,7 +62,7 @@
 
       @case ('done') {
         <section class="ds-card ds-card--success ds-stack" role="status">
-          <h2>Jeu associé ✓</h2>
+          <h2 #stepTitle tabindex="-1">Jeu associé ✓</h2>
           <p>
             Retourne dans Celeste : le bandeau va disparaître dans quelques secondes et tes morts
             arriveront sur ton <a routerLink="/">tableau de bord</a>. Tu n'as plus rien à faire.
@@ -73,7 +76,7 @@
 
       @case ('denied') {
         <section class="ds-card ds-stack" role="status">
-          <h2>Demande refusée</h2>
+          <h2 #stepTitle tabindex="-1">Demande refusée</h2>
           <p class="ds-muted">Le jeu n'a pas été associé à ton compte.</p>
           <div><button type="button" class="ds-btn" (click)="restart()">Saisir un autre code</button></div>
         </section>
@@ -82,7 +85,7 @@
 
     @if (error(); as message) {
       <div class="ds-alert ds-alert--danger" role="alert">
-        <span class="ds-alert__icon">!</span>
+        <span class="ds-alert__icon" aria-hidden="true">!</span>
         <p>{{ message }}</p>
       </div>
     }

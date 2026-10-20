@@ -13,7 +13,7 @@
       <section class="now" aria-label="Tentative en cours">
         <div class="where">
           <span class="where-name ds-display">{{ title() }}</span>
-          <span class="ds-face" [class.ds-face--b]="c.side === 'B'" [class.ds-face--c]="c.side === 'C'" [attr.aria-label]="'Face ' + c.side">{{ c.side }}</span>
+          <span class="ds-face" [class.ds-face--b]="c.side === 'B'" [class.ds-face--c]="c.side === 'C'"><span class="ds-sr-only">Face </span>{{ c.side }}</span>
         </div>
         <div class="figures">
           <div class="ds-stat">
