@@ -140,6 +140,10 @@ avance sur le distant (`git status -sb`).
 - Après le push d'une branche, rappeler que la suite est une **pull request** vers `main`
   (la CI lance les tests ; la fusion déclenche le déploiement). Ne créer la PR que si
   l'utilisateur le demande (`gh` peut ne pas être connecté).
+- La PR est fusionnée en **squash** (seul mode autorisé sur le dépôt) : un seul commit sur `main`,
+  dont le message est le **titre de la PR**. Écrire donc ce titre comme un message Conventional
+  Commits (`feat(api): …`) et résumer l'ensemble dans la description. La branche est supprimée
+  à la fusion.
 - **Non** → ne rien pousser, et ne pas reposer la question avant le prochain commit.
 - Si aucun remote n'est configuré (`git remote -v` vide), le dire au lieu de proposer le push.
 - L'accord vaut pour ce push seulement, pas pour les suivants.
