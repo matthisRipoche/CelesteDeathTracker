@@ -1,10 +1,17 @@
-import { formatDuration, modOf, percent, shortMapName } from './format';
+import { formatClock, formatDuration, modOf, percent, shortMapName } from './format';
 
 describe('format', () => {
   it('formate une durée en m:ss', () => {
     expect(formatDuration(83_000)).toBe('1:23');
     expect(formatDuration(5_400)).toBe('0:05');
     expect(formatDuration(252_000)).toBe('4:12');
+  });
+
+  it('formate un chronomètre, avec les heures au-delà de 60 minutes', () => {
+    expect(formatClock(102_000)).toBe('1:42');
+    expect(formatClock(3_909_000)).toBe('1:05:09');
+    expect(formatClock(-5)).toBe('0:00');
+    expect(formatClock(null)).toBe('0:00');
   });
 
   it("affiche un tiret quand la durée est inconnue", () => {
