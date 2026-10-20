@@ -159,6 +159,18 @@ class AttemptFlowTests {
     }
 
     @Test
+    void closingTheGameEndsTheOpenAttempt() throws Exception {
+        Player p = newPlayer();
+        String id = UUID.randomUUID().toString();
+        event(p, ev("attempt_start", id, "A", "a-00", 1000, ""), 202);
+        event(p, ev("attempt_end", id, "A", "a-03", 9000, ",\"sessionTimeMs\":8000,\"reason\":\"game_closed\""), 202);
+
+        Attempt a = attempts.findByUserIdAndClientId(p.userId(), id).orElseThrow();
+        assertEquals("game_closed", a.getEndReason());
+        assertEquals("a-03", a.getEndRoom());
+    }
+
+    @Test
     void invalidEventsAreRejected() throws Exception {
         Player p = newPlayer();
         String id = UUID.randomUUID().toString();

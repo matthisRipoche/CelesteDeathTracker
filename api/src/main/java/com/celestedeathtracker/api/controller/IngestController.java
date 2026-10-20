@@ -7,6 +7,7 @@ import com.celestedeathtracker.api.model.Death;
 import com.celestedeathtracker.api.repository.DeathRepository;
 import com.celestedeathtracker.api.security.RateLimiter;
 import com.celestedeathtracker.api.service.AttemptService;
+import com.celestedeathtracker.api.service.LiveHub;
 import jakarta.validation.Valid;
 import java.time.Duration;
 import org.springframework.http.HttpStatus;
@@ -31,11 +32,14 @@ public class IngestController {
 
     private final DeathRepository deaths;
     private final AttemptService attemptService;
+    private final LiveHub liveHub;
     private final RateLimiter rateLimiter;
 
-    public IngestController(DeathRepository deaths, AttemptService attemptService, RateLimiter rateLimiter) {
+    public IngestController(DeathRepository deaths, AttemptService attemptService, LiveHub liveHub,
+                            RateLimiter rateLimiter) {
         this.deaths = deaths;
         this.attemptService = attemptService;
+        this.liveHub = liveHub;
         this.rateLimiter = rateLimiter;
     }
 
@@ -50,6 +54,7 @@ public class IngestController {
         Death saved = deaths.save(new Death(userId, r.timestamp(), r.chapter(), r.room(),
                 r.deathX(), r.deathY(), r.totalDeaths(), r.sessionDeaths(), r.timeInRoomMs(),
                 attemptId, r.side(), r.saveSlot()));
+        liveHub.publish(userId); // les onglets ouverts voient la mort tout de suite
         return DeathResponse.from(saved);
     }
 
@@ -59,6 +64,7 @@ public class IngestController {
     public void event(@AuthenticationPrincipal Long userId, @Valid @RequestBody AttemptEventRequest r) {
         limit(userId);
         attemptService.apply(userId, r);
+        liveHub.publish(userId);
     }
 
     private void limit(Long userId) {
