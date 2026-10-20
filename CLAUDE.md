@@ -3,7 +3,7 @@
 Mod Everest pour Celeste qui envoie chaque mort du joueur à un dashboard web.
 Dépôt Git, distant `origin` sur GitHub (`matthisRipoche/CelesteDeathTracker`). Documentation et commentaires en français.
 **Chaque commit passe par le skill `commit`** (`.claude/skills/commit/SKILL.md`) : Conventional Commits en français, commits atomiques, build + tests avant.
-**Workflow de branches** : pas de commit direct sur `main` (un push sur `main` lance la CI/CD et le déploiement). Une branche par fonctionnalité (`feat/…`, `fix/…`, `docs/…`, `chore/…`), puis pull request vers `main` : la CI teste, la fusion déploie. Le skill `commit` demande avant chaque push.
+**Workflow de branches** : pas de commit direct sur `main` (un push sur `main` lance la CI/CD et le déploiement). Une branche par fonctionnalité (`feat/…`, `fix/…`, `docs/…`, `chore/…`), puis pull request vers `main` : la CI teste, la fusion déploie. **Fusion en squash uniquement** (réglage GitHub : un commit par PR sur `main`, titre de la PR au format Conventional Commits, branche supprimée automatiquement à la fusion). Le skill `commit` demande avant chaque push.
 
 ## Objectif et contexte
 
