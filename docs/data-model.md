@@ -70,7 +70,7 @@ type AttemptEvent = {
   mapName?:              string // Nom officiel affiché dans le jeu (traduit), sinon absent
   startedFromBeginning?: boolean
   // attempt_end seulement
-  reason?: "completed" | "restart" | "give_up" | "save_and_quit" | "golden_restart" | "switched"
+  reason?: "completed" | "restart" | "give_up" | "save_and_quit" | "golden_restart" | "switched" | "game_closed"
 }
 ```
 
@@ -89,6 +89,10 @@ valeurs (room et temps de la dernière mort). Un respawn après une mort laisse 
 Le menu pause « recommencer le chapitre » passe, lui, par `OnExit` (`restart`).
 
 `golden_restart` : le joueur est mort avec une fraise dorée, le jeu relance le chapitre.
+
+`game_closed` : le jeu se ferme (`Everest.Events.Celeste.OnExiting`) alors qu'une tentative est ouverte. Sans
+lui, la tentative resterait ouverte côté serveur et le live afficherait « En jeu » jusqu'à la tolérance de
+pause (3 h). Envoi bloquant 1,5 s au plus, car le processus s'arrête aussitôt ; un plantage du jeu n'envoie rien.
 
 Les tentatives sans mort ni entrée de room, terminées en quelques secondes (recommencer tout de suite),
 sont enregistrées telles quelles : c'est à la lecture (pages) de les ignorer.

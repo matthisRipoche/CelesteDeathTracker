@@ -4,6 +4,7 @@ import { devRoutes } from './dev-routes';
 import { Dashboard } from './features/dashboard/dashboard';
 import { Login } from './features/login/login';
 import { FaceDetailPage } from './features/face-detail/face-detail';
+import { Live } from './features/live/live';
 import { Maps } from './features/maps/maps';
 import { Profile } from './features/profile/profile';
 import { Pair } from './features/pair/pair';
@@ -13,6 +14,7 @@ export const routes: Routes = [
   { path: 'login', component: Login, canActivate: [guestGuard] },
   { path: 'pair', component: Pair, canActivate: [authGuard] },
   { path: 'tokens', component: Tokens, canActivate: [authGuard] },
+  { path: 'live', component: Live, canActivate: [authGuard] },
   { path: 'maps', component: Maps, canActivate: [authGuard] },
   { path: 'maps/:side', component: FaceDetailPage, canActivate: [authGuard] },
   // Ancienne adresse du détail d'une map (par SID seul) : la face est désormais dans le chemin.

@@ -51,7 +51,7 @@ public class Attempt {
     @Column(name = "ended_at")
     private Long endedAt;
 
-    // completed | restart | give_up | save_and_quit | golden_restart | switched
+    // completed | restart | give_up | save_and_quit | golden_restart | switched | game_closed
     @Column(name = "end_reason")
     private String endReason;
 

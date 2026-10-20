@@ -72,6 +72,7 @@ public class DeathTrackerModule : EverestModule
         Everest.Events.Level.OnLoadLevel   += OnLoadLevel;
         Everest.Events.Level.OnTransitionTo += OnTransitionTo;
         Everest.Events.Level.OnExit        += OnLevelExit;
+        Everest.Events.Celeste.OnExiting   += OnGameExiting;
         Logger.Log(LogLevel.Info, "DeathTracker", "Death Tracker chargé !");
     }
 
@@ -98,6 +99,7 @@ public class DeathTrackerModule : EverestModule
         Everest.Events.Level.OnLoadLevel   -= OnLoadLevel;
         Everest.Events.Level.OnTransitionTo -= OnTransitionTo;
         Everest.Events.Level.OnExit        -= OnLevelExit;
+        Everest.Events.Celeste.OnExiting   -= OnGameExiting;
 
         _attempt = null;
         _ready = false;
@@ -317,10 +319,10 @@ public class DeathTrackerModule : EverestModule
     }
 
     private static void SendAttemptEvent(string type, AttemptContext attempt, string room, long sessionTicks,
-        string? mapName = null, bool? startedFromBeginning = null, string? reason = null)
+        string? mapName = null, bool? startedFromBeginning = null, string? reason = null, bool wait = false)
     {
         if (!Settings.Enabled) return;
-        _ = PostAsync("/api/ingest/events", new AttemptEvent
+        var sent = PostAsync("/api/ingest/events", new AttemptEvent
         {
             Type                 = type,
             AttemptId            = attempt.Id,
@@ -334,6 +336,23 @@ public class DeathTrackerModule : EverestModule
             StartedFromBeginning = startedFromBeginning,
             Reason               = reason
         });
+
+        // À la fermeture du jeu le processus s'arrête aussitôt : on attend (brièvement) que l'envoi parte.
+        if (wait)
+        {
+            try { sent.Wait(1500); } catch { /* le jeu se ferme : rien à faire d'une erreur d'envoi */ }
+        }
+    }
+
+    // Fermeture du jeu : sans cela, la tentative resterait « ouverte » côté serveur et le live afficherait
+    // « En jeu » pendant des heures. La sortie normale d'une map passe déjà par OnLevelExit.
+    private static void OnGameExiting()
+    {
+        var attempt = _attempt;
+        _attempt = null;
+        if (attempt is null) return;
+        SendAttemptEvent("attempt_end", attempt, attempt.LastRoom, attempt.LastTimeTicks,
+            reason: "game_closed", wait: true);
     }
 
     // Appelé à chaque chargement de niveau (entrée dans la map, respawn après une mort, redémarrage) :

@@ -26,5 +26,5 @@ public record AttemptEventRequest(
         Long sessionTimeMs,
         @Size(max = 255) String mapName,
         Boolean startedFromBeginning,
-        @Pattern(regexp = "completed|restart|give_up|save_and_quit|golden_restart|switched") String reason) {
+        @Pattern(regexp = "completed|restart|give_up|save_and_quit|golden_restart|switched|game_closed") String reason) {
 }

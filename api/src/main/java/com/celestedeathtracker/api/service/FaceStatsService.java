@@ -5,12 +5,8 @@ import com.celestedeathtracker.api.dto.FaceDtos.FaceDetail;
 import com.celestedeathtracker.api.dto.FaceDtos.FaceSummary;
 import com.celestedeathtracker.api.dto.FaceDtos.RecentAttempt;
 import com.celestedeathtracker.api.dto.FaceDtos.RoomStat;
-import com.celestedeathtracker.api.model.Attempt;
-import com.celestedeathtracker.api.model.Death;
-import com.celestedeathtracker.api.model.RoomEntry;
 import com.celestedeathtracker.api.repository.AttemptRepository;
-import com.celestedeathtracker.api.repository.DeathRepository;
-import com.celestedeathtracker.api.repository.RoomEntryRepository;
+import com.celestedeathtracker.api.service.AttemptViews.View;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -20,53 +16,27 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Calcule les statistiques d'une face à partir des tentatives, des entrées de room et des morts.
- * Les règles sont celles de docs/arborescence-pages.md :
- * <ul>
- *   <li><b>tentative significative</b> : au moins une mort, une entrée de room, ou une fin « completed » ;
- *       les tentatives de quelques secondes sans rien d'autre (recommencer tout de suite) sont ignorées ;</li>
- *   <li><b>deathless réussi</b> : terminée (completed) sans aucune mort ;</li>
- *   <li><b>room où s'arrête une tentative</b> : celle de la première mort ; à défaut, sa room de fin ;</li>
- *   <li><b>durée d'une tentative morte</b> : le temps de partie à la première mort (le temps tenu).</li>
- * </ul>
+ * Calcule les statistiques d'une face à partir des tentatives classées par {@link AttemptViews}
+ * (les règles — tentative significative, deathless réussi, room d'arrêt, durée — y sont décrites).
  * Tout est lu pour UN compte : on ne passe jamais un identifiant qui ne vient pas de ses tentatives.
  */
 @Service
 @Transactional(readOnly = true)
 public class FaceStatsService {
 
-    // « end » marque la fin de la map dans les données du jeu : ce n'est pas une room à afficher.
-    private static final Set<String> NOT_A_ROOM = Set.of("end");
     private static final int EVOLUTION_MAX = 200;
     private static final int RECENT_MAX = 8;
 
     private final AttemptRepository attempts;
-    private final DeathRepository deaths;
-    private final RoomEntryRepository roomEntries;
+    private final AttemptViews attemptViews;
 
-    public FaceStatsService(AttemptRepository attempts, DeathRepository deaths, RoomEntryRepository roomEntries) {
+    public FaceStatsService(AttemptRepository attempts, AttemptViews attemptViews) {
         this.attempts = attempts;
-        this.deaths = deaths;
-        this.roomEntries = roomEntries;
-    }
-
-    /** Une tentative avec tout ce qu'il faut pour la classer. */
-    private record View(
-            Attempt attempt,
-            List<Death> deaths,
-            List<String> rooms,      // rooms visitées dans l'ordre, départ compris
-            String result,
-            Long durationMs,
-            String endRoom) {
-
-        boolean success() {
-            return "success".equals(result);
-        }
+        this.attemptViews = attemptViews;
     }
 
     private record FaceKey(String chapter, String side) {
@@ -75,7 +45,7 @@ public class FaceStatsService {
     /** « Mes maps » : une ligne par face jouée, la plus récente d'abord. */
     public List<FaceSummary> faces(Long userId) {
         Map<FaceKey, List<View>> byFace = new LinkedHashMap<>();
-        for (View v : views(attempts.findByUserIdOrderByStartedAtAsc(userId))) {
+        for (View v : attemptViews.significantViews(attempts.findByUserIdOrderByStartedAtAsc(userId))) {
             byFace.computeIfAbsent(new FaceKey(v.attempt().getChapter(), v.attempt().getSide()),
                     k -> new ArrayList<>()).add(v);
         }
@@ -93,7 +63,8 @@ public class FaceStatsService {
 
     /** Le détail d'une face ; vide si le compte n'y a aucune tentative significative. */
     public Optional<FaceDetail> face(Long userId, String sid, String side) {
-        List<View> views = views(attempts.findByUserIdAndChapterAndSideOrderByStartedAtAsc(userId, sid, side));
+        List<View> views = attemptViews.significantViews(
+                attempts.findByUserIdAndChapterAndSideOrderByStartedAtAsc(userId, sid, side));
         if (views.isEmpty()) {
             return Optional.empty();
         }
@@ -134,57 +105,6 @@ public class FaceStatsService {
 
     // ------------------------------------------------------------------ calcul
 
-    /** Charge morts et entrées de room des tentatives données, ne garde que les significatives. */
-    private List<View> views(List<Attempt> list) {
-        if (list.isEmpty()) {
-            return List.of();
-        }
-        List<Long> ids = list.stream().map(Attempt::getId).toList();
-        Map<Long, List<Death>> deathsByAttempt = deaths.findByAttemptIdInOrderByIdAsc(ids).stream()
-                .collect(Collectors.groupingBy(Death::getAttemptId));
-        Map<Long, List<RoomEntry>> entriesByAttempt = roomEntries.findByAttemptIdInOrderByEnteredAtAsc(ids).stream()
-                .collect(Collectors.groupingBy(RoomEntry::getAttemptId));
-
-        List<View> views = new ArrayList<>();
-        for (Attempt a : list) {
-            List<Death> d = deathsByAttempt.getOrDefault(a.getId(), List.of());
-            List<RoomEntry> e = entriesByAttempt.getOrDefault(a.getId(), List.of());
-            boolean completed = "completed".equals(a.getEndReason());
-            if (d.isEmpty() && e.isEmpty() && !completed) {
-                continue; // tentative parasite : recommencée tout de suite, sans rien
-            }
-            views.add(view(a, d, e, completed));
-        }
-        return views;
-    }
-
-    private View view(Attempt a, List<Death> d, List<RoomEntry> e, boolean completed) {
-        Set<String> rooms = new LinkedHashSet<>();
-        if (a.getStartRoom() != null && !NOT_A_ROOM.contains(a.getStartRoom())) {
-            rooms.add(a.getStartRoom());
-        }
-        for (RoomEntry r : e) {
-            if (!NOT_A_ROOM.contains(r.getRoom())) {
-                rooms.add(r.getRoom());
-            }
-        }
-        List<String> visited = new ArrayList<>(rooms);
-
-        if (!d.isEmpty()) {
-            Death first = d.get(0);
-            // La première mort met fin au deathless : c'est là que la tentative s'arrête.
-            return new View(a, d, visited, "death", first.getTimeInRoomMs(), first.getRoom());
-        }
-        if (completed) {
-            return new View(a, d, visited, "success", a.getSessionTimeMs(), null);
-        }
-        if (a.getEndReason() == null) {
-            String last = visited.isEmpty() ? a.getStartRoom() : visited.get(visited.size() - 1);
-            return new View(a, d, visited, "ongoing", a.getSessionTimeMs(), last);
-        }
-        return new View(a, d, visited, "abandoned", a.getSessionTimeMs(), a.getEndRoom());
-    }
-
     /**
      * L'ordre des rooms de la map, déduit des tentatives : celui de la tentative qui est allée le plus
      * loin (de préférence terminée), puis les rooms vues ailleurs dans l'ordre où on les rencontre.
@@ -197,7 +117,7 @@ public class FaceStatsService {
         Set<String> order = new LinkedHashSet<>(reference.rooms());
         for (View v : views) {
             order.addAll(v.rooms());
-            if (v.endRoom() != null && !NOT_A_ROOM.contains(v.endRoom())) {
+            if (v.endRoom() != null && !AttemptViews.NOT_A_ROOM.contains(v.endRoom())) {
                 order.add(v.endRoom());
             }
         }

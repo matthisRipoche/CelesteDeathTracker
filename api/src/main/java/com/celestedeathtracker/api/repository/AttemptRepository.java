@@ -13,4 +13,7 @@ public interface AttemptRepository extends JpaRepository<Attempt, Long> {
     List<Attempt> findByUserIdOrderByStartedAtAsc(Long userId);
 
     List<Attempt> findByUserIdAndChapterAndSideOrderByStartedAtAsc(Long userId, String chapter, String side);
+
+    // Pour le live : seulement les tentatives récentes, de la plus ancienne à la plus récente.
+    List<Attempt> findByUserIdAndStartedAtGreaterThanEqualOrderByStartedAtAsc(Long userId, long since);
 }

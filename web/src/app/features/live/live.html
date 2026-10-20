@@ -1,0 +1,125 @@
+<app-shell>
+  <header class="head">
+    <h1 class="ds-display title">Direct</h1>
+    <span class="conn" [class.on]="feed.connection() === 'open'">
+      <span class="conn-dot" aria-hidden="true"></span>{{ connectionLabel() }}
+    </span>
+  </header>
+
+  @if (!snapshot()) {
+    <div class="ds-skeleton tall"></div>
+  } @else {
+    @if (current(); as c) {
+      <section class="now" aria-label="Tentative en cours">
+        <div class="where">
+          <span class="where-name ds-display">{{ title() }}</span>
+          <span class="ds-face" [class.ds-face--b]="c.side === 'B'" [class.ds-face--c]="c.side === 'C'" [attr.aria-label]="'Face ' + c.side">{{ c.side }}</span>
+        </div>
+        <div class="figures">
+          <div class="ds-stat">
+            <span class="ds-stat__value"><span class="ds-mark">{{ c.room }}</span></span>
+            <span class="ds-stat__label">Room actuelle</span>
+          </div>
+          <div class="ds-stat fig-sep">
+            <span class="ds-stat__value">{{ elapsed() }}</span>
+            <span class="ds-stat__label">Depuis le départ de la tentative</span>
+          </div>
+          <div class="ds-stat fig-sep">
+            <span class="ds-stat__value" [class.ds-stat__value--success]="c.deaths === 0" [class.ds-stat__value--danger]="c.deaths > 0">{{ c.deaths }}</span>
+            <span class="ds-stat__label">{{ c.deaths === 0 ? 'Mort : deathless en vie' : (c.deaths > 1 ? 'Morts dans cette tentative' : 'Mort dans cette tentative') }}</span>
+          </div>
+          <div class="ds-stat fig-sep">
+            <span class="ds-stat__value">{{ c.roomsVisited }}</span>
+            <span class="ds-stat__label">Rooms traversées</span>
+          </div>
+        </div>
+        @if (quiet()) {
+          <p class="quiet">Aucune nouvelle du jeu depuis {{ quietFor() }} : il est peut-être en pause. Le direct reprend dès que tu changes de room.</p>
+        }
+      </section>
+    } @else if (!active()) {
+      <div class="ds-empty">
+        <p class="ds-empty__title">Aucune session en cours</p>
+        <p>Lance Celeste avec le mod : la tentative et les statistiques apparaissent ici dès la première room.</p>
+      </div>
+    }
+
+    @if (session(); as s) {
+      <section class="sec" aria-labelledby="session-title">
+        <div class="lab">
+          <h2 id="session-title">{{ active() ? 'Session en cours' : 'Dernière session' }}</h2>
+          <p>
+            Commencée à {{ s.startedAt | date: 'HH:mm' }}.
+            @if (!active()) { Terminée à {{ s.lastActivityAt | date: 'HH:mm' }}. }
+            Une session se termine après 30 minutes sans jouer, mais reste ouverte tant que tu es dans la map.
+          </p>
+        </div>
+        <div class="body">
+          <div class="figures">
+            <div class="ds-stat">
+              <span class="ds-stat__value">{{ s.attempts }}</span>
+              <span class="ds-stat__label">Tentatives</span>
+            </div>
+            <div class="ds-stat fig-sep">
+              <span class="berry-row">
+                <span class="ds-stat__value ds-stat__value--success">{{ s.clears }}</span>
+                <app-px-berry [size]="46" />
+              </span>
+              <span class="ds-stat__label">Deathless réussis</span>
+            </div>
+            <div class="ds-stat fig-sep">
+              <span class="ds-stat__value">{{ fmt(s.bestClearMs) }}</span>
+              <span class="ds-stat__label">Meilleur temps réussi</span>
+            </div>
+            <div class="ds-stat fig-sep">
+              <span class="ds-stat__value">{{ playTime() }}</span>
+              <span class="ds-stat__label">Temps de jeu</span>
+            </div>
+          </div>
+          @if (cruxIntro()) {
+            <p class="crux"><span class="ds-mark">{{ cruxIntro() }}</span></p>
+          }
+
+          @if (s.recent.length > 0) {
+            <h3 class="feed-title">Dernières tentatives de la session</h3>
+            <div class="ds-table-wrap">
+              <table class="ds-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Heure</th>
+                    <th scope="col">Face</th>
+                    <th scope="col">Résultat</th>
+                    <th scope="col" class="is-num">Durée</th>
+                    <th scope="col">Arrêt</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (a of s.recent; track a.id) {
+                    <tr>
+                      <td>{{ a.startedAt | date: 'HH:mm:ss' }}</td>
+                      <td>
+                        <a [routerLink]="['/maps', a.side.toLowerCase()]" [queryParams]="{ sid: a.sid }">{{ name(a) }}, {{ a.side }}</a>
+                      </td>
+                      <td>
+                        <span class="result" [class]="'result-' + a.result">
+                          @switch (a.result) {
+                            @case ('success') { <app-px-berry [size]="18" /> }
+                            @case ('death') { <app-px-burst [size]="18" /> }
+                            @default { <span class="ring" aria-hidden="true"></span> }
+                          }
+                          {{ label(a.result) }}
+                        </span>
+                      </td>
+                      <td class="is-num">{{ fmt(a.durationMs) }}</td>
+                      <td class="end">{{ a.result === 'success' ? 'Fraise' : (a.endRoom ?? '—') }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+      </section>
+    }
+  }
+</app-shell>
