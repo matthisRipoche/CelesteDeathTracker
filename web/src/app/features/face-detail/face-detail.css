@@ -47,6 +47,8 @@
 .room.crux { background: color-mix(in srgb, var(--color-highlight) 28%, transparent); }
 .room.summit { border-top: var(--border-width) solid var(--color-border-strong); margin-top: var(--space-1); min-height: 60px; }
 .room-name { padding-left: var(--space-3); font-weight: 600; }
+a.room-name { color: inherit; text-decoration: underline; text-decoration-color: var(--color-border-strong); text-underline-offset: 3px; }
+a.room-name:hover { text-decoration-color: currentColor; }
 .room-name.win { color: var(--color-success); font-weight: 700; }
 .node { position: relative; align-self: stretch; }
 .node::before { content: ''; position: absolute; left: 11px; top: 0; bottom: 0; width: 2px; background: var(--color-border); }

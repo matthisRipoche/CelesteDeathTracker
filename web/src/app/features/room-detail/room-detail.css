@@ -1,0 +1,47 @@
+:host { display: block; }
+
+.crumbs { font-size: var(--text-sm); color: var(--color-text-muted); }
+.crumb-link { color: var(--color-text-muted); }
+
+.tall { height: 320px; }
+
+.head { display: grid; gap: var(--space-3); }
+.title-row { display: flex; align-items: flex-end; gap: var(--space-4); flex-wrap: wrap; }
+.name { margin: 0; font-size: clamp(3rem, 9vw, 6rem); }
+.title-row .ds-face { width: 40px; height: 40px; font-size: var(--text-xl); margin-bottom: var(--space-2); }
+.title-row .ds-badge { margin-bottom: var(--space-3); }
+.lead { max-width: 62ch; font-size: var(--text-lg); line-height: 1.55; }
+
+/* Rooms voisines : ‹ précédente · position · suivante › */
+.steps { display: flex; align-items: center; gap: var(--space-5); flex-wrap: wrap; font-size: var(--text-sm); }
+.step { font-weight: 600; }
+.where { color: var(--color-text-muted); }
+
+/* Chiffres clés : séparés par un filet, pas de cartes */
+.figures {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-top: var(--border-width) solid var(--color-border-strong);
+  padding-top: var(--space-5);
+}
+.figures > .ds-stat { padding: 0 var(--space-5); }
+.figures > .ds-stat:first-child { padding-left: 0; }
+.fig-sep { border-left: 1px solid var(--color-border); }
+
+/* Sections : titre dans la marge, contenu à droite */
+.sec {
+  display: flex; flex-wrap: wrap; gap: var(--space-4) var(--space-6);
+  border-top: var(--border-width) solid var(--color-border-strong);
+  padding-top: var(--space-4);
+}
+.lab { flex: 1 1 220px; max-width: 240px; }
+.lab h2 { margin: 0 0 var(--space-2); font-size: var(--text-lg); }
+.lab p { font-size: var(--text-sm); color: var(--color-text-muted); line-height: 1.4; }
+.body { flex: 3 1 520px; min-width: 0; }
+
+.trend { margin-bottom: var(--space-3); font-size: var(--text-lg); line-height: 1.4; font-weight: 600; }
+
+@media (max-width: 720px) {
+  .figures { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5) 0; }
+  .figures > .ds-stat:nth-child(3) { padding-left: 0; border-left: 0; }
+}
