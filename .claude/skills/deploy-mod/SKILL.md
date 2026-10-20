@@ -1,6 +1,6 @@
 ---
 name: deploy-mod
-description: Mettre à jour le mod CelesteDeathTracker dans le jeu Celeste (compiler la DLL, la copier dans le dossier Mods, vérifier que le jeu la charge et que les données arrivent). À utiliser dès que l'utilisateur veut déployer, installer, mettre à jour ou tester le mod dans le jeu, copier la DLL, "mettre le jeu à jour", relancer le mod après une modification de DeathTrackerModule.cs ou Pairing.cs, ou vérifier que le jeu envoie bien ses données au serveur, même s'il ne dit pas explicitement "déployer".
+description: Mettre à jour le mod CelesteDeathTracker dans le jeu Celeste (compiler la DLL, la copier dans le dossier Mods, vérifier que le jeu la charge et que les données arrivent). À utiliser dès que l'utilisateur veut déployer, installer, mettre à jour ou tester le mod dans le jeu, copier la DLL, "mettre le jeu à jour", relancer le mod après une modification du code du mod (DeathTrackerModule.cs, Tracking/, Pairing/…), ou vérifier que le jeu envoie bien ses données au serveur, même s'il ne dit pas explicitement "déployer".
 ---
 
 # Mettre à jour le mod dans le jeu
