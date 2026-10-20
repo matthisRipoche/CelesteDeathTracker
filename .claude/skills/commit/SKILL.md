@@ -51,7 +51,7 @@ Selon les dossiers touchés :
 |---|---|
 | `web/` | `cd web && npx ng build` puis `npx ng test --watch=false --browsers=ChromeHeadless` |
 | `api/` | `cd api && ./mvnw test` |
-| `CelesteDeathTracker/` | `dotnet build CelesteDeathTracker/CelesteDeathTracker.csproj` (nécessite Celeste installé) |
+| `CelesteDeathTracker/` | `dotnet build CelesteDeathTracker/CelesteDeathTracker.csproj` (nécessite Celeste installé) et `dotnet test CelesteDeathTracker.Tests` (sans Celeste) |
 
 Si une vérification échoue : ne pas commiter, montrer l'erreur à l'utilisateur. Si une vérification
 est impossible (ex. mod sans Celeste), le dire dans le compte rendu.

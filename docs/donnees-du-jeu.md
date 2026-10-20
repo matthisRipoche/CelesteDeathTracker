@@ -10,7 +10,7 @@ Le contrat technique (types, format JSON) reste dans [`data-model.md`](data-mode
 explique le *sens* des données et leurs limites.
 
 > **Sources.** Les sections « Constaté » viennent du code du mod
-> (`CelesteDeathTracker/DeathTrackerModule.cs`) et des 23 morts réelles de
+> (`CelesteDeathTracker/Tracking/GameHooks.cs`) et des 23 morts réelles de
 > `dashboard-legacy/deaths.json`. Les sections « À vérifier en jeu » reposent sur ma connaissance
 > de Celeste et d'Everest, pas sur une mesure : à confirmer avant de bâtir une page dessus.
 

@@ -1,8 +1,4 @@
-using Celeste;
 using Celeste.Mod;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-using Monocle;
 using System;
 using System.Diagnostics;
 using System.Net.Http;
@@ -51,7 +47,7 @@ internal static class PairingManager
                 return;
 
             var target = DeathTrackerModule.Settings.Server;
-            if (!DeathTrackerModule.Settings.Enabled || DeathTrackerModule.TokenFor(target).Length > 0)
+            if (!DeathTrackerModule.Settings.Enabled || Servers.TokenFor(target).Length > 0)
                 return;
 
             _cts = new CancellationTokenSource();
@@ -77,7 +73,7 @@ internal static class PairingManager
     /// </summary>
     public static void Reset(ServerTarget target)
     {
-        DeathTrackerModule.SetToken(target, "");
+        Servers.SetToken(target, "");
         DeathTrackerModule.Instance.SaveSettings();
 
         if (DeathTrackerModule.Settings.Server == target)
@@ -90,11 +86,11 @@ internal static class PairingManager
 
     private static async Task RunAsync(ServerTarget target, CancellationToken ct)
     {
-        var name = DeathTrackerModule.NameOf(target);
+        var name = Servers.NameOf(target);
         var browserOpened = false;
         try
         {
-            while (!ct.IsCancellationRequested && DeathTrackerModule.TokenFor(target).Length == 0)
+            while (!ct.IsCancellationRequested && Servers.TokenFor(target).Length == 0)
             {
                 StartResponse? start;
                 try
@@ -149,7 +145,7 @@ internal static class PairingManager
                         case "approved" when !string.IsNullOrEmpty(poll.Token):
                             // Le token est rangé sous le serveur qui l'a émis, même si le joueur
                             // a changé de serveur entre-temps.
-                            DeathTrackerModule.SetToken(target, poll.Token);
+                            Servers.SetToken(target, poll.Token);
                             DeathTrackerModule.Instance.SaveSettings();
                             View = new PairingView(PairingPhase.Paired, name, "", "", "", DateTime.UtcNow);
                             Logger.Log(LogLevel.Info, "DeathTracker", $"Jeu associé au compte ({name}).");
@@ -180,7 +176,7 @@ internal static class PairingManager
 
     private static async Task<T?> PostAsync<T>(ServerTarget target, string path, object body, CancellationToken ct)
     {
-        var url = DeathTrackerModule.UrlFor(target) + path;
+        var url = Servers.UrlFor(target) + path;
         using var request = new HttpRequestMessage(HttpMethod.Post, url)
         {
             Content = new StringContent(JsonSerializer.Serialize(body, Json), Encoding.UTF8, "application/json")
@@ -226,74 +222,4 @@ internal static class PairingManager
         int ExpiresInSeconds, int IntervalSeconds);
 
     private sealed record PollResponse(string? Status, string? Token);
-}
-
-/// <summary>
-/// Bandeau affiché par-dessus le jeu (menu comme niveau) tant que l'appairage n'est pas terminé.
-/// C'est ce qui dispense de chercher une option dans les menus.
-/// </summary>
-internal sealed class PairingOverlay : DrawableGameComponent
-{
-    private static readonly TimeSpan PairedBannerDuration = TimeSpan.FromSeconds(6);
-    private static readonly TimeSpan FailedBannerDuration = TimeSpan.FromSeconds(8);
-
-    public PairingOverlay(Game game) : base(game)
-    {
-        DrawOrder = int.MaxValue; // par-dessus tout
-    }
-
-    public override void Draw(GameTime gameTime)
-    {
-        var view = PairingManager.View;
-        string? title = null, line = null, code = null;
-        var color = Color.White;
-        var age = DateTime.UtcNow - view.At;
-
-        switch (view.Phase)
-        {
-            case PairingPhase.Waiting:
-                title = $"Death Tracker ({view.Server}) : associe ce jeu à ton compte";
-                line = $"Sur {ShortUrl(view.Url)}, connecte-toi puis saisis ce code :";
-                code = view.UserCode;
-                break;
-            case PairingPhase.Paired when age < PairedBannerDuration:
-                title = $"Death Tracker ({view.Server}) : jeu associé à ton compte";
-                color = Color.LightGreen;
-                break;
-            case PairingPhase.Failed when age < FailedBannerDuration:
-                title = $"Death Tracker ({view.Server}) : {view.Message}";
-                color = Color.Orange;
-                break;
-        }
-
-        if (title is null)
-            return;
-
-        var height = code is null ? 70f : 200f;
-        const float width = 1180f;
-        var x = (1920f - width) / 2f;
-        const float y = 20f;
-
-        // "Monocle.Draw" : dans cette classe, "Draw" seul désignerait la méthode ci-dessus.
-        Monocle.Draw.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp,
-            DepthStencilState.None, RasterizerState.CullNone, null, Engine.ScreenMatrix);
-
-        Monocle.Draw.Rect(x, y, width, height, Color.Black * 0.8f);
-        ActiveFont.DrawOutline(title, new Vector2(1920f / 2f, y + 18f), new Vector2(0.5f, 0f),
-            Vector2.One * 0.6f, color, 2f, Color.Black);
-
-        if (line is not null)
-            ActiveFont.DrawOutline(line, new Vector2(1920f / 2f, y + 70f), new Vector2(0.5f, 0f),
-                Vector2.One * 0.5f, Color.White, 2f, Color.Black);
-
-        if (code is not null)
-            ActiveFont.DrawOutline(code, new Vector2(1920f / 2f, y + 112f), new Vector2(0.5f, 0f),
-                Vector2.One * 1.1f, Color.Gold, 3f, Color.Black);
-
-        Monocle.Draw.SpriteBatch.End();
-    }
-
-    private static string ShortUrl(string url) =>
-        url.Replace("https://", "", StringComparison.OrdinalIgnoreCase)
-           .Replace("http://", "", StringComparison.OrdinalIgnoreCase);
 }

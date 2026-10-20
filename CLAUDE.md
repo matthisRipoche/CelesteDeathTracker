@@ -44,7 +44,8 @@ Celeste (jeu) ──[mod C#]──HTTP POST──▶ dashboard (Express | Flask)
 
 | Dossier | Rôle |
 |---|---|
-| `CelesteDeathTracker/` | Mod C# (net8.0, Everest). Point d'entrée : `DeathTrackerModule.cs`. `Class1.cs` est vide/supprimable. |
+| `CelesteDeathTracker/` | Mod C# (net8.0, Everest), une seule DLL. `DeathTrackerModule.cs` (cycle de vie + menu), `DeathTrackerSettings.cs` (réglages, `Servers`), `Tracking/` (`GameHooks` : écoute du jeu ; `AttemptTracker` + `Payloads` : logique **pure**), `Net/ApiClient.cs` (envoi), `Pairing/` (`PairingManager`, `PairingOverlay`). |
+| `CelesteDeathTracker.Tests/` | Tests xUnit de la logique pure du mod, **sans Celeste** (lancés en CI). Les fichiers purs sont inclus par lien (`<Compile Include=… Link=…>`), pas par référence de projet : le mod reste une seule DLL. Ces fichiers ne doivent référencer AUCUN type du jeu. |
 | `api/` | **API Spring Boot** (Maven, `./mvnw`). Package `com.celestedeathtracker.api`. Étape 1 faite : `POST/GET /api/deaths`. PostgreSQL + Flyway (`db/migration/V1__create_death.sql`), `ddl-auto=validate` ; H2 en mémoire seulement pour les tests. Colonnes mappées explicitement avec `@Column`. |
 | `docker-compose.yml` | Pile db (postgres:17) + api + web (nginx). `docker-compose.override.yml` (dev) publie 5432. `.env` (ignoré) : `POSTGRES_PASSWORD`, `WEB_PORT`. Voir `docs/docker-and-deployment.md`. |
 | `web/` | **Front Angular 20** (CLI 20 car Node 24.12 < 24.15 exigé par le CLI récent). Dashboard v1 : `death.model.ts`, `death.service.ts`, `app.ts/html/css`. Stats calculées côté client depuis `GET /api/deaths`, poll 3 s via `toSignal(timer…)`. |
@@ -80,7 +81,7 @@ npm run dev                                   # node --watch
 pip install -r requirements.txt && python server.py   # Flask, port 5000 fixe
 ```
 
-Tests : Karma/Jasmine côté `web/` (2 tests) et un test de contexte Spring dans `api/`. Pas de linter.
+Tests : Karma/Jasmine côté `web/` (2 tests), un test de contexte Spring dans `api/`, xUnit pour la logique pure du mod (`dotnet test CelesteDeathTracker.Tests` ; sans SDK .NET local : `docker run --rm -v "$PWD":/src -w /src mcr.microsoft.com/dotnet/sdk:8.0 dotnet test CelesteDeathTracker.Tests`). Pas de linter.
 
 ## Contrat API
 
@@ -131,7 +132,7 @@ Le mod envoie en camelCase, tous les champs de `DeathEvent` sont obligatoires (J
 - Tokens : `cdt_` + 32 octets aléatoires base64url (47 car.), stockés en SHA-256 (`api_tokens.token_hash`), max 10 actifs par compte, `last_used_at` mis à jour à chaque envoi (un UPDATE par mort : à alléger si le volume monte).
 - 35 morts historiques en base ont `user_id` NULL (import avant les comptes) : visibles par personne. À rattacher à un compte ou supprimer avant la prod.
 - Ne PAS déployer sans HTTPS (tokens en Bearer), ni sans changer `POSTGRES_PASSWORD`. Limitation de débit EN PLACE (en mémoire, une seule instance d'API) : pairing start 10/min/IP, poll 60/min/IP, lookup/approve 10/min/compte, ingestion 300/min/compte.
-- **Mod C#** : `Pairing.cs` (PairingManager + PairingOverlay), `DeathTrackerModule.cs`. Au lancement sans token : demande un code, l'affiche en bandeau dans le jeu, ouvre `/pair` dans le navigateur, interroge jusqu'à recevoir le token puis le range dans les réglages (`ApiToken`, `[SettingIgnore]`). Sur 401 il oublie le token et se ré-associe. Build : `dotnet build`, puis copier la DLL dans `Celeste/Mods/CelesteDeathTracker/` (Celeste fermé ; vérifier avec `tasklist`). Ancienne DLL de référence : `CelesteDeathTracker/CelesteDeathTracker.dll.previous`.
+- **Mod C#** : `Pairing/PairingManager.cs` + `Pairing/PairingOverlay.cs`, `DeathTrackerModule.cs`. Toute décision sur les tentatives va dans `Tracking/AttemptTracker.cs` (testée), `GameHooks` ne fait que lire le jeu et envoyer. Au lancement sans token : demande un code, l'affiche en bandeau dans le jeu, ouvre `/pair` dans le navigateur, interroge jusqu'à recevoir le token puis le range dans les réglages (`ApiToken`, `[SettingIgnore]`). Sur 401 il oublie le token et se ré-associe. Build : `dotnet build`, puis copier la DLL dans `Celeste/Mods/CelesteDeathTracker/` (Celeste fermé ; vérifier avec `tasklist`). Ancienne DLL de référence : `CelesteDeathTracker/CelesteDeathTracker.dll.previous`.
 - **Appairage** : `deviceCode` (secret du mod, hashé en base) ≠ `userCode` (court, affiché). Le token est généré au moment du poll (jamais stocké en clair avant) et la transition `APPROVED→CONSUMED` est atomique en SQL. Le code est TOUJOURS saisi à la main sur `/pair` (jamais pré-rempli par un lien : anti-phishing). `app.public-url` (env `PUBLIC_URL`) = adresse du SITE ouverte par le mod ; `ServerUrl` du mod = adresse de l'API.
 - `server.forward-headers-strategy=native` : l'IP cliente vient de `X-Forwarded-For`, accepté par Tomcat seulement depuis un réseau privé (le proxy). Ne pas exposer l'API directement sur Internet derrière un autre proxy sans le vérifier.
 - Piège C# : dans une classe dérivée de `DrawableGameComponent`, `Draw` désigne la méthode ; utiliser `Monocle.Draw.SpriteBatch` / `Monocle.Draw.Rect`.

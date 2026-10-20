@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Tests de la logique PURE du mod, sans Celeste : ils tournent en CI.
+    On compile directement les fichiers sources purs du mod (liens ci-dessous) au lieu de référencer
+    son projet : le mod reste ainsi une seule DLL pour Everest, et ces fichiers ne doivent référencer
+    aucun type du jeu (sinon ce projet ne compile plus, ce qui sert justement de garde-fou).
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../CelesteDeathTracker/Tracking/AttemptTracker.cs" Link="Mod/AttemptTracker.cs" />
+    <Compile Include="../CelesteDeathTracker/Tracking/Payloads.cs" Link="Mod/Payloads.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>
