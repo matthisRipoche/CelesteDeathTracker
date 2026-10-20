@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, ElementRef, inject, viewChild } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { LiveBanner } from '../live-banner/live-banner';
@@ -18,6 +18,8 @@ export class Shell {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
 
+  private readonly content = viewChild.required<ElementRef<HTMLElement>>('content');
+
   protected readonly user = this.auth.user;
 
   protected readonly links = [
@@ -27,6 +29,12 @@ export class Shell {
     { path: '/tokens', label: 'Appareils', exact: false },
     { path: '/pair', label: 'Associer un jeu', exact: false },
   ];
+
+  /** Lien « Aller au contenu » : place le focus sur la zone principale de la page. */
+  protected skipToContent(event: Event): void {
+    event.preventDefault();
+    this.content().nativeElement.focus();
+  }
 
   protected logout(): void {
     this.auth.logout().subscribe(() => this.router.navigateByUrl('/login'));

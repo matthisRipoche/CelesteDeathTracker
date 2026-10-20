@@ -4,8 +4,28 @@
   width: min(100% - 2 * var(--space-5), var(--content-width));
   margin: var(--space-6) auto var(--space-8);
   display: grid;
+  /* minmax(0, …) : un bloc large (graphique, tableau) défile dans son conteneur au lieu
+     d'élargir toute la page sur mobile (WCAG 1.4.10). */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-5);
 }
+/* Cible du lien d'évitement : focusable par script seulement, pas un élément interactif. */
+.page:focus { outline: none; }
+
+/* Hors de l'écran tant qu'il n'a pas le focus clavier. */
+.skip-link {
+  position: absolute;
+  top: var(--space-3);
+  left: var(--space-3);
+  z-index: 100;
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: var(--border-width) solid var(--color-border-strong);
+  font-weight: 600;
+  transform: translateY(-200%);
+}
+.skip-link:focus { transform: none; }
 
 .user { font-size: var(--text-sm); }
 

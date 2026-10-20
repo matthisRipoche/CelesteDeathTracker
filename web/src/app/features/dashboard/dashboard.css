@@ -16,5 +16,7 @@
 .note { margin: calc(-1 * var(--space-2)) 0 var(--space-3); }
 
 @media (max-width: 480px) {
-  .two { grid-template-columns: 1fr; }
+  /* minmax(0, …) et non 1fr : sinon le canvas des graphiques garde sa largeur et empêche la
+     colonne de rétrécir quand la fenêtre se réduit (rotation, zoom). */
+  .two { grid-template-columns: minmax(0, 1fr); }
 }

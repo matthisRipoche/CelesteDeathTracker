@@ -13,13 +13,14 @@ import { LiveFeed } from '../../core/live-feed';
   imports: [RouterLink],
   template: `
     @if (feed.current(); as c) {
-      <div class="banner">
+      <!-- Repère nommé : sans lui, ce bandeau serait le seul contenu hors des zones de la page. -->
+      <aside class="banner" aria-label="Partie en cours">
         <span class="dot" aria-hidden="true"></span>
         <span class="text">
           <strong>En jeu :</strong> {{ title() }}, face {{ c.side }}, room {{ c.room }}, {{ clock() }}
         </span>
         <a routerLink="/live" class="more">Voir le direct</a>
-      </div>
+      </aside>
     }
   `,
   styles: `

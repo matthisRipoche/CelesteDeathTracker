@@ -1,3 +1,7 @@
+<!-- Premier élément au clavier : saute le logo et le menu. Un clic géré en TypeScript, car
+     href="#contenu" seul renverrait vers la racine du site (base href="/"). -->
+<a class="skip-link" href="#contenu" (click)="skipToContent($event)">Aller au contenu</a>
+
 <header class="ds-topbar">
   <a class="ds-topbar__brand" routerLink="/">
     <svg width="26" height="22" viewBox="0 0 13 11" shape-rendering="crispEdges" aria-hidden="true">
@@ -28,9 +32,9 @@
 
 <app-live-banner />
 
-<div class="page">
+<main id="contenu" class="page" tabindex="-1" #content>
   <ng-content />
-</div>
+</main>
 
 <nav class="ds-tabbar mobile-tabbar" aria-label="Navigation principale (mobile)">
   @for (l of links; track l.path) {
