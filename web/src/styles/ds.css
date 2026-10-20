@@ -295,6 +295,12 @@ a.ds-card:hover { background: var(--color-surface-raised); color: var(--color-te
 }
 .ds-topbar__spacer { flex: 1; }
 .ds-topbar .user { color: var(--color-on-chrome-muted); }
+/* Un bouton posé sur la barre d'encre doit se lire en clair, sinon il disparaît en thème clair. */
+.ds-topbar .ds-btn {
+  --btn-fg: var(--color-on-chrome);
+  --btn-border: var(--color-on-chrome);
+}
+.ds-topbar .ds-btn:hover { --btn-bg: var(--color-on-chrome); --btn-fg: var(--color-chrome); }
 
 .ds-nav { display: flex; gap: var(--space-5); height: 100%; }
 .ds-nav__link {
