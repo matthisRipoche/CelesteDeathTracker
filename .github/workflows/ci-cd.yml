@@ -1,6 +1,6 @@
 name: CI/CD
 
-# - Pull request : tests de l'API et du site.
+# - Pull request : tests de l'API, du site et de la logique du mod.
 # - Push sur main : tests, puis construction des images, puis déploiement sur le VPS.
 on:
   push:
@@ -53,9 +53,22 @@ jobs:
         working-directory: web
         run: npx ng build --configuration production
 
+  mod:
+    name: Tests du mod (logique pure, sans Celeste)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Tests
+        # Le mod lui-même n'est pas compilé ici (DLL du jeu non publiables) : seulement les
+        # fichiers purs qu'inclut CelesteDeathTracker.Tests.
+        run: dotnet test CelesteDeathTracker.Tests -c Release --nologo
+
   images:
     name: Construction et publication des images
-    needs: [api, web]
+    needs: [api, web, mod]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
