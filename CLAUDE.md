@@ -9,6 +9,7 @@ Dépôt Git, distant `origin` sur GitHub (`matthisRipoche/CelesteDeathTracker`).
 
 - **But final** : une **plateforme multi-utilisateurs** (comptes, tokens d'API, stats par joueur), pas un outil local.
 - **Objectif personnel de l'utilisateur** : apprendre le **développement assisté par l'IA** (cadrer, décider, relire), pas écrire Angular/Spring à la main. Claude implémente de bout en bout (mod, API, migrations, front, tests). Il explique les choix de conception et leurs compromis, et fait valider les décisions structurantes (contrat d'API, découpage, workflow) avant de coder.
+- **Quand l'utilisateur demande d'expliquer ou d'apprendre quelque chose, utiliser le skill `teach`** (`.claude/skills/teach/`, espace `learning/`). Réponse directe pour une question rapide, leçon pour un sujet à retenir.
 - Éviter de passer du temps sur la config au détriment de l'apprentissage (Postgres via Docker, pas de sur-outillage).
 
 ## État actuel vs cible
