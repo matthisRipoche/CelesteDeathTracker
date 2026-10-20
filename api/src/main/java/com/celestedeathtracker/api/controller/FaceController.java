@@ -2,6 +2,7 @@ package com.celestedeathtracker.api.controller;
 
 import com.celestedeathtracker.api.dto.FaceDtos.FaceDetail;
 import com.celestedeathtracker.api.dto.FaceDtos.FaceSummary;
+import com.celestedeathtracker.api.dto.FaceDtos.RoomDetail;
 import com.celestedeathtracker.api.security.CurrentUser;
 import com.celestedeathtracker.api.service.FaceStatsService;
 import java.util.List;
@@ -45,5 +46,18 @@ public class FaceController {
         }
         return faces.face(currentUser.id(authentication), sid, side)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Aucune tentative sur cette face"));
+    }
+
+    /** Détail d'une room : GET /api/faces/room?sid=Celeste/1-ForsakenCity&side=B&room=6a */
+    @GetMapping("/room")
+    public RoomDetail room(Authentication authentication,
+                           @RequestParam String sid,
+                           @RequestParam String side,
+                           @RequestParam String room) {
+        if (!side.matches("[ABC]")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "side doit valoir A, B ou C");
+        }
+        return faces.room(currentUser.id(authentication), sid, side, room)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Aucune tentative dans cette room"));
     }
 }

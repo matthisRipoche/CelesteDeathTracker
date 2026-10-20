@@ -40,6 +40,43 @@ public final class FaceDtos {
             int deaths) {
     }
 
+    /**
+     * Une mort dans une room. x et y sont les coordonnées du monde de la map (Y vers le bas), pas celles
+     * de la room. first = première mort de sa tentative, celle qui fait perdre le deathless.
+     */
+    public record DeathPoint(long deathId, long attemptId, long at, int x, int y, boolean first) {
+    }
+
+    /**
+     * Ce qui est arrivé à une tentative qui est entrée dans la room. outcome : cleared (room franchie),
+     * died (au moins une mort ici) ou left (tentative terminée ici sans mourir : abandon, recommencer).
+     */
+    public record RoomOutcome(long attemptId, long startedAt, String outcome) {
+    }
+
+    /**
+     * Le détail d'une room d'une face. stops = tentatives qui s'arrêtent ici (mort ou abandon, comme
+     * RoomStat.endings) et stopRate = stops / entries, toujours entre 0 et 1. deathsTotal compte toutes
+     * les morts, plusieurs par tentative possibles. position commence à 1.
+     */
+    public record RoomDetail(
+            String sid,
+            String side,
+            String mapName,
+            String room,
+            int position,
+            int roomCount,
+            String previousRoom,
+            String nextRoom,
+            int entries,
+            int stops,
+            double stopRate,
+            int deathsTotal,
+            Long lastDeathAt,
+            List<DeathPoint> points,
+            List<RoomOutcome> outcomes) {
+    }
+
     /** Le détail d'une face. */
     public record FaceDetail(
             String sid,
