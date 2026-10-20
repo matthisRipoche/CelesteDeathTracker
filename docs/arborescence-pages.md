@@ -74,11 +74,18 @@ La page centrale. Répond à « où mon deathless casse-t-il ? ».
 - **Évolution** : durée (ou progression) de chaque tentative dans le temps, pour voir si on progresse.
 - Dix dernières tentatives (résultat, durée, room de fin).
 
-### Détail d'une room `/maps/:side/:room?sid=`
-- Chiffres : entrées dans la room, morts, taux de mort (morts / entrées), dernière mort.
-- **Nuage de points** des morts (puis heatmap de densité) avec les coordonnées du jeu.
-- Évolution du taux de mort dans le temps.
-- Dernières morts de la room.
+### Détail d'une room `/maps/:side/:room?sid=` (fait)
+Répond à « à quel endroit précis mon deathless casse-t-il, et est-ce que je passe cette room de plus en plus souvent ? ».
+- Chiffres : tentatives arrivées dans la room, arrêts, **taux d'arrêt** (arrêts / arrivées, toujours entre
+  0 et 100 %), total de morts et date de la dernière.
+- **Nuage de points** des morts aux coordonnées du jeu. Les premières morts de la tentative (celles qui
+  font perdre le deathless) sont pleines, les suivantes creuses. Le cadre vient des morts elles-mêmes
+  (le jeu n'envoie pas les limites de la room), avec la même échelle sur X et Y. La heatmap de densité
+  viendra quand il y aura plus de données.
+- **Tes passages** : une case par tentative arrivée dans la room (franchie, morte ici, terminée ici sans
+  mourir), de la plus ancienne à la plus récente, avec une tendance « premières 10 / dernières 10 ».
+- Dernières morts (10), avec leur position.
+- Liens vers la room précédente et la suivante ; chaque room de la page de la face mène ici.
 
 ### Historique `/attempts`
 - Liste paginée de toutes les tentatives significatives (voir règle plus bas).
@@ -113,7 +120,13 @@ La page centrale. Répond à « où mon deathless casse-t-il ? ».
 - **Room où s'arrête une tentative** : la room de la première mort ; à défaut, la room de fin.
 - **Ordre des rooms d'une map** : déduit des `room_entries` de la meilleure tentative (ou de la première
   tentative terminée) ; les rooms jamais vues ne sont pas affichées.
-- **Taux de mort d'une room** : morts dans la room / entrées dans la room.
+- **Tentative arrivée dans une room** : elle y est entrée, s'y est arrêtée ou y est morte. Un événement
+  d'entrée perdu (envoi sans file d'attente) ne la fait donc pas disparaître. Le nombre d'arrivées peut
+  dépasser celui de la page de la face dans ce seul cas.
+- **Taux d'arrêt d'une room** : tentatives qui s'y arrêtent (mort ou abandon) / tentatives qui y arrivent.
+  Toujours entre 0 et 100 %. On n'utilise pas « morts / entrées » : après une mort le jeu recharge la room
+  sans nouvelle entrée, donc plusieurs morts pour une entrée peuvent dépasser 100 %. Le total de morts
+  reste affiché à côté.
 
 ## Données à fournir par l'API
 
@@ -123,7 +136,7 @@ Toutes les routes sont filtrées par compte, comme `GET /api/deaths` aujourd'hui
 |---|---|
 | `GET /api/faces` (fait) | Mes maps : une ligne par face, avec les chiffres de la carte |
 | `GET /api/faces/detail?sid=&side=` (fait) | Détail d'une face : chiffres, rooms dans l'ordre avec le nombre de fins, évolution |
-| `GET /api/faces/room?sid=&side=&room=` | Détail d'une room : entrées, morts, taux, positions |
+| `GET /api/faces/room?sid=&side=&room=` (fait) | Détail d'une room : arrivées, arrêts, taux d'arrêt, positions des morts (500 dernières), tentatives (100 dernières), rooms voisines |
 | `GET /api/attempts` | Historique (filtres : map, face, résultat, période ; pagination) |
 | `GET /api/attempts/{id}` | Détail d'une tentative : parcours et morts |
 | `GET /api/summary` | Tableau de bord : reprendre, chiffres du jour, maps récentes, activité |

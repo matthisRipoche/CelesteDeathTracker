@@ -89,7 +89,7 @@ Tests : Karma/Jasmine côté `web/` (2 tests), un test de contexte Spring dans `
 Navigateur (session cookie + CSRF) :
 - `POST /api/auth/register` · `POST /api/auth/login` · `POST /api/auth/logout` · `GET /api/auth/me`
 - `GET /api/deaths` : uniquement les morts du compte connecté
-- `GET /api/faces` (une ligne par face jouée) · `GET /api/faces/detail?sid=&side=` (détail d'une face) : statistiques de tentatives, le SID passe en paramètre de requête
+- `GET /api/faces` (une ligne par face jouée) · `GET /api/faces/detail?sid=&side=` (détail d'une face) · `GET /api/faces/room?sid=&side=&room=` (détail d'une room : arrivées, arrêts, taux d'arrêt, positions des morts) : statistiques de tentatives, le SID passe en paramètre de requête
 - `GET /api/live` (état courant) · `GET /api/live/stream` (**SSE** : `snapshot` à l'ouverture puis à chaque événement du jeu, `ping` toutes les 15 s) : tentative en cours et statistiques de la session. Réservé à la session de connexion. Voir `docs/live-session.md`
 - `GET /api/tokens` · `POST /api/tokens` {label} (renvoie le token en clair UNE fois) · `DELETE /api/tokens/{id}` (révoque)
 
