@@ -1,6 +1,11 @@
 package com.celestedeathtracker.api.security;
 
+import com.celestedeathtracker.api.security.discord.DiscordOAuth2UserService;
+import com.celestedeathtracker.api.security.discord.DiscordOAuthConfig;
+import com.celestedeathtracker.api.service.DiscordAccountService;
 import com.celestedeathtracker.api.service.TokenService;
+import jakarta.servlet.http.HttpSession;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -12,6 +17,10 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.web.authentication.AuthenticationFailureHandler;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -66,7 +75,9 @@ public class SecurityConfig {
 
     @Bean
     @Order(2)
-    SecurityFilterChain webFilterChain(HttpSecurity http, SecurityContextRepository repo) throws Exception {
+    SecurityFilterChain webFilterChain(HttpSecurity http, SecurityContextRepository repo,
+                                        ObjectProvider<ClientRegistrationRepository> oauthClients,
+                                        DiscordAccountService discordAccounts) throws Exception {
         http
             .securityContext(c -> c.securityContextRepository(repo))
 
@@ -86,7 +97,9 @@ public class SecurityConfig {
                 // Les erreurs (400, 409...) sont redirigées en interne vers /error : si cette page
                 // exigeait une connexion, tout code d'erreur serait transformé en 401.
                 .requestMatchers("/error").permitAll()
-                .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/me").permitAll()
+                .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/me", "/api/auth/providers").permitAll()
+                // Départ et retour du flux Discord (le navigateur y arrive par redirection, sans session)
+                .requestMatchers(DiscordOAuthConfig.AUTHORIZATION_PATH + "/**").permitAll()
                 // Le mod n'a pas encore de token à ce stade : ces deux routes sont publiques
                 // (et limitées en débit). Rien n'est révélé tant qu'un compte n'a pas approuvé.
                 .requestMatchers(HttpMethod.POST, "/api/pairing/start", "/api/pairing/poll").permitAll()
@@ -98,6 +111,38 @@ public class SecurityConfig {
             .httpBasic(b -> b.disable())
             .logout(l -> l.disable()); // géré par AuthController
 
+        // Connexion Discord : active seulement si l'application Discord est configurée
+        if (oauthClients.getIfAvailable() != null) {
+            http.oauth2Login(o -> o
+                .loginPage("/login") // page Angular : évite la page de connexion générée par Spring
+                .authorizationEndpoint(a -> a.baseUri(DiscordOAuthConfig.AUTHORIZATION_PATH))
+                .redirectionEndpoint(r -> r.baseUri(DiscordOAuthConfig.CALLBACK_PATH + "*"))
+                .userInfoEndpoint(u -> u.userService(new DiscordOAuth2UserService(discordAccounts)))
+                .successHandler(discordSuccessHandler())
+                .failureHandler(discordFailureHandler()));
+        }
+
         return http.build();
+    }
+
+    /** Après Discord : retour au profil si c'était un rattachement, à l'accueil sinon. */
+    private static AuthenticationSuccessHandler discordSuccessHandler() {
+        return (request, response, authentication) -> {
+            HttpSession session = request.getSession(false);
+            boolean linked = session != null && session.getAttribute(DiscordOAuth2UserService.LINKED_ATTR) != null;
+            if (linked) {
+                session.removeAttribute(DiscordOAuth2UserService.LINKED_ATTR);
+            }
+            // /login : la garde des invités renvoie vers la page demandée avant la connexion (ex. /pair)
+            response.sendRedirect(linked ? "/profile?discord=lie" : "/login?discord=ok");
+        };
+    }
+
+    private static AuthenticationFailureHandler discordFailureHandler() {
+        return (request, response, exception) -> {
+            boolean alreadyLinked = exception instanceof OAuth2AuthenticationException oauth
+                    && DiscordOAuth2UserService.ERROR_ALREADY_LINKED.equals(oauth.getError().getErrorCode());
+            response.sendRedirect(alreadyLinked ? "/profile?discord=deja-lie" : "/login?discord=erreur");
+        };
     }
 }

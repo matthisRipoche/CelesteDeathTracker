@@ -5,11 +5,15 @@ import com.celestedeathtracker.api.dto.RegisterRequest;
 import com.celestedeathtracker.api.dto.UserResponse;
 import com.celestedeathtracker.api.model.AppUser;
 import com.celestedeathtracker.api.repository.UserRepository;
+import com.celestedeathtracker.api.security.CurrentUser;
+import com.celestedeathtracker.api.security.discord.DiscordOAuth2UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import java.util.Locale;
+import java.util.Map;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +23,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -38,14 +43,20 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final SecurityContextRepository securityContextRepository;
+    private final CurrentUser currentUser;
+    private final ObjectProvider<ClientRegistrationRepository> oauthClients;
 
     public AuthController(UserRepository users, PasswordEncoder passwordEncoder,
                           AuthenticationManager authenticationManager,
-                          SecurityContextRepository securityContextRepository) {
+                          SecurityContextRepository securityContextRepository,
+                          CurrentUser currentUser,
+                          ObjectProvider<ClientRegistrationRepository> oauthClients) {
         this.users = users;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.securityContextRepository = securityContextRepository;
+        this.currentUser = currentUser;
+        this.oauthClients = oauthClients;
     }
 
     @PostMapping("/register")
@@ -84,7 +95,7 @@ public class AuthController {
         SecurityContextHolder.setContext(context);
         securityContextRepository.saveContext(context, httpRequest, httpResponse);
 
-        return UserResponse.from(users.findByEmail(auth.getName()).orElseThrow());
+        return UserResponse.from(currentUser.user(auth));
     }
 
     @PostMapping("/logout")
@@ -104,9 +115,26 @@ public class AuthController {
                 || authentication.getName().equals("anonymousUser")) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        return users.findByEmail(authentication.getName())
-                .map(u -> ResponseEntity.ok(UserResponse.from(u)))
-                .orElse(ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
+        return ResponseEntity.ok(UserResponse.from(currentUser.user(authentication)));
+    }
+
+    /** Le front n'affiche le bouton Discord que si l'application Discord est configurée. */
+    @GetMapping("/providers")
+    public Map<String, Boolean> providers() {
+        return Map.of("discord", oauthClients.getIfAvailable() != null);
+    }
+
+    /**
+     * Première étape du rattachement : on note en session QUEL compte demande le lien (POST + CSRF,
+     * pour qu'un site tiers ne puisse pas le déclencher), puis le front redirige vers Discord.
+     */
+    @PostMapping("/discord/link")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void startDiscordLink(Authentication authentication, HttpServletRequest request) {
+        if (oauthClients.getIfAvailable() == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+        request.getSession().setAttribute(DiscordOAuth2UserService.LINK_USER_ATTR, currentUser.id(authentication));
     }
 
     // Message volontairement identique pour "email inconnu" et "mauvais mot de passe"

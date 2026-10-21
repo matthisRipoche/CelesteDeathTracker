@@ -24,6 +24,14 @@ class AuthFlowTests {
     private static final String CREDENTIALS = "{\"email\":\"%s\",\"password\":\"motdepasse123\"}";
 
     @Test
+    void discordIsDisabledWithoutItsConfiguration() throws Exception {
+        mvc.perform(get("/api/auth/providers"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.discord").value(false));
+        mvc.perform(get("/api/auth/oauth2/discord")).andExpect(status().isNotFound());
+    }
+
+    @Test
     void deathsListRequiresLogin() throws Exception {
         mvc.perform(get("/api/deaths")).andExpect(status().isUnauthorized());
     }
