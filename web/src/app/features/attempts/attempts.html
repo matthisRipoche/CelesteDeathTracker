@@ -1,0 +1,111 @@
+<app-shell>
+  <div>
+    <h1 class="ds-display title">Historique</h1>
+    <p class="lead">Toutes tes tentatives, de la plus récente à la plus ancienne. Ouvre-en une pour voir son parcours et ses morts.</p>
+  </div>
+
+  <form class="filters" aria-label="Filtres" (submit)="$event.preventDefault()">
+    <div class="ds-field">
+      <label for="f-result">Résultat</label>
+      <select id="f-result" class="ds-input" [value]="result() ?? ''" (change)="setResult($any($event.target).value)">
+        <option value="">Tous</option>
+        <option value="success">Réussies</option>
+        <option value="death">Mortes</option>
+        <option value="abandoned">Abandonnées</option>
+        <option value="ongoing">En cours</option>
+      </select>
+    </div>
+    <div class="ds-field">
+      <label for="f-period">Période</label>
+      <select id="f-period" class="ds-input" [value]="period()" (change)="setPeriod($any($event.target).value)">
+        <option value="all">Depuis toujours</option>
+        <option value="30d">30 derniers jours</option>
+        <option value="7d">7 derniers jours</option>
+      </select>
+    </div>
+    @if (face().sid; as sid) {
+      <p class="face-filter">
+        Face
+        @if (face().side) { <span class="ds-face" [class.ds-face--b]="face().side === 'B'" [class.ds-face--c]="face().side === 'C'">{{ face().side }}</span> }
+        de <strong>{{ title({ sid, mapName: null }) }}</strong>
+        <a routerLink="/attempts">Retirer ce filtre</a>
+      </p>
+    }
+  </form>
+
+  @switch (state().status) {
+    @case ('loading') {
+      <div class="ds-skeleton tall"></div>
+    }
+    @case ('error') {
+      <div class="ds-alert ds-alert--danger" role="alert">
+        <span class="ds-alert__icon">!</span>
+        <p>Impossible de charger l'historique. Change un filtre ou recharge la page pour réessayer.</p>
+      </div>
+    }
+    @default {
+      @if (data(); as d) {
+        @if (d.total === 0) {
+          <div class="ds-empty">
+            <p class="ds-empty__title">
+              @if (filtered()) { Aucune tentative avec ces filtres } @else { Aucune tentative pour l'instant }
+            </p>
+            <p>
+              @if (filtered()) { Élargis la période ou retire un filtre. } @else { Lance une map avec le mod : tes tentatives apparaissent ici. }
+            </p>
+          </div>
+        } @else {
+          <p class="count" aria-live="polite">{{ d.total }} tentative{{ d.total > 1 ? 's' : '' }}</p>
+          <div class="ds-table-wrap">
+            <table class="ds-table">
+              <thead>
+                <tr>
+                  <th scope="col">Date</th>
+                  <th scope="col">Face</th>
+                  <th scope="col">Résultat</th>
+                  <th scope="col" class="is-num">Durée</th>
+                  <th scope="col">Arrêt</th>
+                  <th scope="col" class="is-num">Morts</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (a of d.items; track a.id) {
+                  <tr>
+                    <td><a class="open" [routerLink]="['/attempts', a.id]">{{ a.startedAt | date: 'dd/MM/yyyy HH:mm' }}</a></td>
+                    <td>
+                      <span class="face-cell">
+                        <span class="ds-face" [class.ds-face--b]="a.side === 'B'" [class.ds-face--c]="a.side === 'C'" [attr.aria-label]="'Face ' + a.side">{{ a.side }}</span>
+                        {{ title(a) }}
+                      </span>
+                    </td>
+                    <td>
+                      <span class="result" [class]="'result-' + a.result">
+                        @switch (a.result) {
+                          @case ('success') { <app-px-berry [size]="18" /> }
+                          @case ('death') { <app-px-burst [size]="18" /> }
+                          @default { <span class="ring" aria-hidden="true"></span> }
+                        }
+                        {{ label(a.result) }}
+                      </span>
+                    </td>
+                    <td class="is-num">{{ fmt(a.durationMs) }}</td>
+                    <td class="end">{{ a.result === 'success' ? 'Fraise' : (a.endRoom ?? '—') }}</td>
+                    <td class="is-num">{{ a.deaths }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          @if (pageCount() > 1) {
+            <nav class="pager" aria-label="Pagination">
+              <button type="button" class="ds-btn ds-btn--sm" (click)="previous()" [disabled]="page() === 0">Précédente</button>
+              <span>Page {{ page() + 1 }} sur {{ pageCount() }}</span>
+              <button type="button" class="ds-btn ds-btn--sm" (click)="next()" [disabled]="page() + 1 >= pageCount()">Suivante</button>
+            </nav>
+          }
+        }
+      }
+    }
+  }
+</app-shell>

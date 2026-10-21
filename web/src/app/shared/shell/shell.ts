@@ -23,6 +23,7 @@ export class Shell {
   protected readonly links = [
     { path: '/', label: 'Tableau de bord', exact: true },
     { path: '/maps', label: 'Maps', exact: false },
+    { path: '/attempts', label: 'Historique', exact: false },
     { path: '/live', label: 'Direct', exact: false },
     { path: '/tokens', label: 'Appareils', exact: false },
     { path: '/pair', label: 'Associer un jeu', exact: false },

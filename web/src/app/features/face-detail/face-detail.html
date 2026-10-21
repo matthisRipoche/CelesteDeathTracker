@@ -103,6 +103,7 @@
           <div class="lab">
             <h2 id="recent-title">Dernières tentatives</h2>
             <p>Chaque trait du parcours est une room : franchie en trait plein, arrêt en rouge.</p>
+            <p><a routerLink="/attempts" [queryParams]="{ sid: d.sid, side: d.side }">Toutes les tentatives de cette face</a></p>
           </div>
           <div class="body">
             <div class="ds-table-wrap">
@@ -119,7 +120,7 @@
                 <tbody>
                   @for (a of d.recent; track a.id) {
                     <tr>
-                      <td>{{ a.startedAt | date: 'dd/MM HH:mm' }}</td>
+                      <td><a [routerLink]="['/attempts', a.id]">{{ a.startedAt | date: 'dd/MM HH:mm' }}</a></td>
                       <td>
                         <span class="result" [class]="'result-' + a.result">
                           @switch (a.result) {
