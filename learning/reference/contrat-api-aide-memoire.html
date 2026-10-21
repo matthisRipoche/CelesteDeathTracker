@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Aide-mémoire : relire un contrat d'API</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+<main>
+  <nav class="lessons" aria-label="Navigation">
+    <a href="../lessons/0001-lire-un-contrat-d-api.html">Leçon 1 : lire un contrat d'API</a>
+  </nav>
+
+  <p class="kicker">Aide-mémoire</p>
+  <h1>Relire un contrat d'API</h1>
+  <p class="lead">À garder sous la main quand Claude propose une route.</p>
+
+  <h2>Les quatre questions</h2>
+  <ol class="checklist">
+    <li><strong>Qui appelle ?</strong> Navigateur (session + CSRF) ou mod (token Bearer).</li>
+    <li><strong>Que contiennent la requête et la réponse ?</strong> Nom, type, unité, obligatoire ou facultatif, pour chaque champ.</li>
+    <li><strong>Que se passe-t-il quand ça va mal ?</strong> Le code d'erreur et la réaction du client.</li>
+    <li><strong>Comment ça évolue ?</strong> Qui lit déjà ce champ ?</li>
+  </ol>
+
+  <h2>Où est le contrat dans ce projet ?</h2>
+  <p>Pas dans un seul fichier. Il est écrit dans le texte (<code>docs/data-model.md</code>, <code>CLAUDE.md</code>), dans le code Java de l'API (<strong>c'est lui qui fait foi</strong>), dans <code>face.model.ts</code> (site) et dans <code>Payloads</code> (mod). Rien ne vérifie que les quatre concordent : après tout changement de champ, demande à Claude la liste de tous les endroits qui le lisent.</p>
+
+  <h2>Casse-t-il quelqu'un ?</h2>
+  <table>
+    <thead><tr><th>Changement</th><th>Risque</th></tr></thead>
+    <tbody>
+      <tr><td>Ajouter un champ facultatif dans une réponse</td><td>Sans danger si le client ignore ce qu'il ne lit pas.</td></tr>
+      <tr><td>Ajouter une route</td><td>Sans danger.</td></tr>
+      <tr><td>Renommer ou retirer un champ</td><td>Casse tout client qui le lit.</td></tr>
+      <tr><td>Rendre un champ de requête obligatoire</td><td>Casse les clients qui ne l'envoient pas (l'ancien mod).</td></tr>
+      <tr><td>Changer un type ou une unité</td><td>Casse en silence : les chiffres deviennent faux.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Les codes du projet</h2>
+  <table>
+    <thead><tr><th>Code</th><th>Sens dans ce projet</th></tr></thead>
+    <tbody>
+      <tr><td><code>200</code></td><td>Lecture réussie.</td></tr>
+      <tr><td><code>201</code></td><td>Une mort a été créée (<code>/api/ingest/deaths</code>).</td></tr>
+      <tr><td><code>202</code></td><td>Événement de tentative reçu, traité ensuite (<code>/api/ingest/events</code>).</td></tr>
+      <tr><td><code>400</code></td><td>Requête invalide : champ absent, <code>side</code> hors A/B/C.</td></tr>
+      <tr><td><code>401</code></td><td>Pas connecté, ou mauvais type d'accès (token sur une route de site, cookie sur l'ingestion).</td></tr>
+      <tr><td><code>404</code></td><td>Rien pour ce compte : une face ou une room jamais jouée.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>À refuser d'office</h2>
+  <ul>
+    <li>Un identifiant d'utilisateur dans le corps d'une requête du mod : le compte vient du token.</li>
+    <li>Un champ qui change de nom sans que le site et le mod soient mis à jour avec lui.</li>
+    <li>Une route de lecture qui ne filtre pas par compte.</li>
+  </ul>
+
+  <p class="note">Sources : <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status">MDN, codes HTTP</a> · <a href="https://www.martinfowler.com/bliki/TolerantReader.html">Fowler, Tolerant Reader</a> · <a href="https://github.com/microsoft/api-guidelines/blob/vNext/azure/Guidelines.md">Azure REST API Guidelines</a> · règles du projet dans <code>CLAUDE.md</code>.</p>
+</main>
+</body>
+</html>

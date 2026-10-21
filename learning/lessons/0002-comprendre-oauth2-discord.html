@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Comprendre OAuth2 avec Discord</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+<main>
+  <nav class="lessons" aria-label="Navigation">
+    <a href="0001-lire-un-contrat-d-api.html">Leçon 1 : lire un contrat d'API</a>
+    <a href="../reference/oauth2-aide-memoire.html">Aide-mémoire : OAuth2</a>
+  </nav>
+
+  <p class="kicker">Leçon 2 · Authentification · 12 minutes</p>
+  <h1>Comprendre OAuth2 avec Discord</h1>
+  <p class="lead">Quand Claude te propose une connexion « via un fournisseur », tu dois savoir qui parle à qui, ce qui doit rester secret, et ce qui protège de la triche.</p>
+
+  <div class="win">
+    <strong>Ce que tu sauras faire à la fin :</strong> suivre les 6 étapes de la connexion Discord du projet, dire quelle donnée passe par le navigateur et laquelle n'y passe jamais, et relire une proposition d'auth avec cette grille.
+  </div>
+
+  <h2 id="probleme">Le problème : prouver qui tu es sans donner ton mot de passe</h2>
+  <p>
+    Ton site veut savoir qui est le joueur. Discord le sait déjà. Mais le joueur ne doit pas donner son mot de passe Discord à ton site.
+    OAuth2 est la méthode où <strong>Discord donne à ton site une autorisation limitée</strong>, après que le joueur a dit « oui » chez Discord.
+  </p>
+
+  <h2 id="roles">Les trois rôles</h2>
+  <p>La norme (<a href="https://datatracker.ietf.org/doc/html/rfc6749">RFC 6749, §1.1</a>) les définit ainsi :</p>
+  <table>
+    <thead><tr><th>Rôle</th><th>Définition de la norme</th><th>Dans le projet</th></tr></thead>
+    <tbody>
+      <tr><td>Resource owner</td><td><em>« une entité capable d'accorder l'accès à une ressource protégée »</em></td><td>Le joueur</td></tr>
+      <tr><td>Client</td><td><em>« une application qui fait des requêtes au nom du resource owner »</em></td><td>Ton API Spring Boot</td></tr>
+      <tr><td>Authorization server</td><td><em>« le serveur qui émet les jetons d'accès au client »</em></td><td>Discord</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Attention au vocabulaire : ici, le « client » est <strong>ton serveur</strong>, pas le navigateur ni le mod.
+    Le navigateur ne fait que transporter des redirections.
+  </p>
+
+  <h2 id="flux">Les 6 étapes (flux « authorization code »)</h2>
+  <p>Ce flux est celui de <code>DiscordOAuthConfig.java</code> : <code>AuthorizationGrantType.AUTHORIZATION_CODE</code>.</p>
+  <table>
+    <thead><tr><th>#</th><th>Qui → qui</th><th>Ce qui se passe</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Joueur → ton API</td><td>Clic sur « Continuer avec Discord » : <code>GET /api/auth/oauth2/discord</code>.</td></tr>
+      <tr><td>2</td><td>Ton API → navigateur → Discord</td><td>Redirection vers <code>https://discord.com/oauth2/authorize</code> avec <code>client_id</code>, <code>scope=identify</code>, <code>redirect_uri</code> et <code>state</code>.</td></tr>
+      <tr><td>3</td><td>Joueur ↔ Discord</td><td>Le joueur se connecte chez Discord et clique « Autoriser ». Ton site ne voit rien de cela.</td></tr>
+      <tr><td>4</td><td>Discord → navigateur → ton API</td><td>Redirection vers <code>/api/auth/oauth2/callback/discord?code=…&amp;state=…</code>. Le <code>code</code> est un ticket à usage court, pas une identité.</td></tr>
+      <tr><td>5</td><td>Ton API → Discord (direct)</td><td><code>POST https://discord.com/api/oauth2/token</code> avec le <code>code</code> <strong>et le secret client</strong>. Discord répond avec un <em>access token</em>.</td></tr>
+      <tr><td>6</td><td>Ton API → Discord (direct)</td><td><code>GET https://discord.com/api/users/@me</code> avec <code>Authorization: Bearer &lt;access token&gt;</code>. Réponse : <code>id</code>, <code>username</code>, <code>global_name</code>, <code>avatar</code>.</td></tr>
+    </tbody>
+  </table>
+  <p class="src">
+    Sources : <a href="https://docs.discord.com/developers/topics/oauth2">doc OAuth2 de Discord</a> (adresses, <code>code</code>, échange contre un token, <code>state</code>) et <code>DiscordOAuthConfig.java</code> (adresses et scope réellement configurés).
+  </p>
+  <p>
+    Puis ton code prend le relais : <code>DiscordOAuth2UserService.loadUser</code> reçoit ces infos, trouve ou crée le compte du site, et la session s'ouvre
+    (cookie <code>JSESSIONID</code>, comme pour un mot de passe). À partir de là, OAuth2 n'intervient plus.
+  </p>
+
+  <h2 id="secret">Pourquoi deux allers-retours ? Ce qui ne passe jamais par le navigateur</h2>
+  <p>
+    Le navigateur voit les étapes 2 et 4 : l'URL et le <code>code</code> sont visibles (historique, extensions, journaux). C'est pourquoi le <code>code</code> ne suffit pas :
+    il faut le <strong>secret client</strong> pour l'échanger (étape 5), et cet échange se fait <em>de serveur à serveur</em>.
+    Les clients web doivent garder ce secret confidentiel : <em>« Web application clients MUST ensure confidentiality of client passwords »</em>
+    (<a href="https://datatracker.ietf.org/doc/html/rfc6749#section-10.1">RFC 6749, §10.1</a>).
+  </p>
+  <p>
+    Dans le projet : le secret vient de <code>DISCORD_CLIENT_SECRET</code> (secret GitHub, puis <code>.env</code> du serveur), jamais du code Angular ni du dépôt.
+    Le <code>client_id</code>, lui, n'est pas un secret (<a href="https://datatracker.ietf.org/doc/html/rfc6749#section-2.2">§2.2</a>).
+  </p>
+
+  <h2 id="state">Le paramètre <code>state</code> : empêcher qu'on te fasse connecter au compte d'un autre</h2>
+  <p>
+    Sans protection, un attaquant pourrait te faire cliquer sur un lien de retour qui contient <em>son</em> code : tu te retrouverais connecté à <em>son</em> compte, ou lié à son Discord.
+    La parade : le client envoie une valeur imprévisible à l'étape 2, la garde de son côté, et refuse le retour si elle n'est pas identique à l'étape 4.
+    La norme dit que la valeur <em>« MUST contain a non-guessable value »</em> (<a href="https://datatracker.ietf.org/doc/html/rfc6749#section-10.12">§10.12</a>) ;
+    Discord le recommande aussi : <em>« denier la requête »</em> si elle ne correspond pas.
+  </p>
+  <p>
+    Dans le projet, nous n'avons écrit aucun code pour cela : c'est Spring Security (<code>oauth2Login</code> dans <code>SecurityConfig.java</code>) qui le gère. Je l'ai
+    vu dans le comportement attendu de Spring, mais <strong>la page de doc lue pour cette leçon ne le détaille pas</strong> : c'est un bon point à me demander de vérifier dans le code de Spring.
+  </p>
+
+  <h2 id="redirect">L'adresse de retour : pourquoi elle doit être identique des deux côtés</h2>
+  <p>
+    L'adresse de l'étape 4 est déclarée chez Discord <em>et</em> construite par Spring (<code>{baseUrl}/api/auth/oauth2/callback/{registrationId}</code>).
+    Si elles diffèrent d'un caractère, Discord refuse. C'est aussi une protection : le code n'est renvoyé qu'à une adresse que tu as choisie à l'avance.
+    C'est ce que tu as fait dans le portail développeur, et pourquoi la prod, Docker et <code>ng serve</code> ont chacun leur ligne.
+  </p>
+
+  <h2 id="liaison">Dans le projet : le même flux sert à deux choses</h2>
+  <ul>
+    <li><strong>Se connecter</strong> : pas de compte connecté, donc <code>resolve</code> trouve ou crée le compte à partir de l'<code>id</code> Discord.</li>
+    <li><strong>Rattacher</strong> : <code>POST /api/auth/discord/link</code> (session + CSRF) note en session <em>quel compte</em> demande, puis le flux part vers Discord. Au retour, <code>loadUser</code> lit cette note et rattache.</li>
+  </ul>
+  <p>
+    Cette note est la raison pour laquelle l'API a besoin d'un <code>POST</code> avant la redirection : c'est le seul moyen de faire passer « qui demande » à travers le détour par Discord.
+  </p>
+
+  <h2 id="grille">Ta grille de relecture : 4 questions</h2>
+  <ol class="checklist">
+    <li><strong>Qui est le client OAuth2 ?</strong> Ton serveur. Si une proposition met le secret dans le navigateur ou le mod, refuse.</li>
+    <li><strong>Que demande-t-on à Discord ?</strong> Le scope. Ici <code>identify</code> : pseudo et avatar, ni email, ni serveurs. Plus de scope, plus de risque et plus de confiance demandée au joueur.</li>
+    <li><strong>Qu'est-ce qui protège le retour ?</strong> <code>state</code> et adresse de retour exacte.</li>
+    <li><strong>Que devient l'identité ensuite ?</strong> Un compte du site et une session ordinaire. Le token Discord n'est pas conservé ici.</li>
+  </ol>
+
+  <h2 id="quiz">À toi : quatre relectures</h2>
+
+  <div class="quiz" data-correct="c">
+    <fieldset>
+      <legend>1. Claude propose de faire l'échange du <code>code</code> contre un token depuis Angular. Que réponds-tu ?</legend>
+      <label><input type="radio" name="q1" value="a"><span>Oui, car le navigateur reçoit déjà le code</span></label>
+      <label><input type="radio" name="q1" value="b"><span>Oui, mais en masquant le secret dans le JS</span></label>
+      <label><input type="radio" name="q1" value="c"><span>Non, car l'échange exige le secret client</span></label>
+      <label><input type="radio" name="q1" value="d"><span>Non, car Discord interdit tout appel direct</span></label>
+    </fieldset>
+    <p class="feedback" aria-live="polite"></p>
+    <template class="why">L'échange (étape 5) demande le secret client, que seul le serveur doit connaître. Du code Angular est lisible par n'importe quel visiteur : le secret y serait public.</template>
+  </div>
+
+  <div class="quiz" data-correct="a">
+    <fieldset>
+      <legend>2. Un attaquant te envoie un lien de retour contenant son <code>code</code>. Qu'est-ce qui doit le bloquer ?</legend>
+      <label><input type="radio" name="q2" value="a"><span>Le state, absent ou différent de celui gardé</span></label>
+      <label><input type="radio" name="q2" value="b"><span>Le client_id, que seul ton site connaît</span></label>
+      <label><input type="radio" name="q2" value="c"><span>Le scope, qui serait trop large ici</span></label>
+      <label><input type="radio" name="q2" value="d"><span>Le mot de passe Discord du joueur</span></label>
+    </fieldset>
+    <p class="feedback" aria-live="polite"></p>
+    <template class="why">Le <code>state</code> lie le retour à la demande faite depuis <em>ton</em> navigateur. Le <code>client_id</code> n'est pas secret, et le mot de passe Discord n'intervient jamais côté site.</template>
+  </div>
+
+  <div class="quiz" data-correct="d">
+    <fieldset>
+      <legend>3. Claude veut ajouter le scope <code>email</code> « au cas où ». Quelle est la bonne question ?</legend>
+      <label><input type="radio" name="q3" value="a"><span>Le joueur a-t-il bien un compte Discord ?</span></label>
+      <label><input type="radio" name="q3" value="b"><span>Le secret client est-il assez long ?</span></label>
+      <label><input type="radio" name="q3" value="c"><span>L'adresse de retour est-elle bien en HTTPS ?</span></label>
+      <label><input type="radio" name="q3" value="d"><span>Quel besoin réel justifie cette donnée en plus ?</span></label>
+    </fieldset>
+    <p class="feedback" aria-live="polite"></p>
+    <template class="why">Le scope décide de ce qu'on demande au joueur. <code>identify</code> suffit pour pseudo et avatar ; un email en plus ajoute une donnée personnelle à protéger sans que le site en ait besoin.</template>
+  </div>
+
+  <div class="quiz" data-correct="b">
+    <fieldset>
+      <legend>4. Pourquoi « Rattacher mon Discord » commence-t-il par un <code>POST /api/auth/discord/link</code> ?</legend>
+      <label><input type="radio" name="q4" value="a"><span>Pour obtenir un token Discord plus long</span></label>
+      <label><input type="radio" name="q4" value="b"><span>Pour noter en session quel compte le demande</span></label>
+      <label><input type="radio" name="q4" value="c"><span>Pour éviter que Discord voie l'adresse</span></label>
+      <label><input type="radio" name="q4" value="d"><span>Pour remplacer le paramètre state du flux</span></label>
+    </fieldset>
+    <p class="feedback" aria-live="polite"></p>
+    <template class="why">Le détour par Discord fait perdre le contexte. La note en session (<code>LINK_USER_ATTR</code>) permet à <code>loadUser</code>, au retour, de savoir à quel compte rattacher. Le <code>POST</code> avec CSRF évite qu'un site tiers déclenche ce rattachement.</template>
+  </div>
+
+  <p class="score" data-quiz-score aria-live="polite"></p>
+
+  <h2 id="aller-plus-loin">Pour aller plus loin</h2>
+  <p>
+    <strong>Source principale à lire :</strong> la <a href="https://docs.discord.com/developers/topics/oauth2">page OAuth2 de la documentation Discord</a> : courte, et c'est exactement le flux du projet.
+    Le texte de référence, plus dense, est la <a href="https://datatracker.ietf.org/doc/html/rfc6749">RFC 6749</a> (sections 1.1, 4.1, 10.1 et 10.12 suffisent).
+    Les autres sources sont dans <code>learning/RESOURCES.md</code>.
+  </p>
+  <p class="note">
+    Une chose n'est pas claire ? Demande-moi dans le terminal. Par exemple : « montre-moi où <code>state</code> est vérifié dans Spring »
+    ou « que se passe-t-il si le joueur clique sur Refuser chez Discord ? ». Je t'explique à partir du vrai code.
+  </p>
+</main>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>
