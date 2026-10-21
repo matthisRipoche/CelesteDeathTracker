@@ -22,7 +22,7 @@
 
   <span class="ds-topbar__spacer"></span>
 
-  <a class="user ds-muted" routerLink="/profile">{{ user()?.email }}</a>
+  <a class="user ds-muted" routerLink="/profile">{{ user()?.email ?? user()?.discordUsername }}</a>
   <button type="button" class="ds-btn ds-btn--sm" (click)="logout()">Déconnexion</button>
 </header>
 

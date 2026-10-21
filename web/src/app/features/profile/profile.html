@@ -10,7 +10,7 @@
       <div class="identity">
         <span class="avatar ds-pixel" aria-hidden="true">{{ initial() }}</span>
         <div>
-          <p class="email">{{ user()?.email }}</p>
+          <p class="email">{{ user()?.email ?? user()?.discordUsername }}</p>
           @if (user()?.createdAt; as created) {
             <p class="ds-muted">Membre depuis le {{ created | date: 'dd/MM/yyyy' }}</p>
           }
@@ -36,6 +36,43 @@
       </div>
     </section>
   </div>
+
+  <section class="ds-card ds-stack">
+    <h2 class="ds-card__title">Discord</h2>
+    @if (discordResult === 'lie') {
+      <div class="ds-alert ds-alert--success" role="status"><p>Discord est rattaché à ton compte.</p></div>
+    } @else if (discordResult === 'deja-lie') {
+      <div class="ds-alert ds-alert--danger" role="alert">
+        <span class="ds-alert__icon">!</span>
+        <p>Ce compte Discord est déjà rattaché à un autre compte, ou ton compte a déjà un autre Discord.</p>
+      </div>
+    }
+    @if (linkError()) {
+      <div class="ds-alert ds-alert--danger" role="alert">
+        <span class="ds-alert__icon">!</span>
+        <p>Impossible de lancer le rattachement. Recharge la page et réessaie.</p>
+      </div>
+    }
+    @if (user()?.discordUsername; as discordName) {
+      <div class="identity">
+        @if (user()?.discordAvatarUrl; as avatarUrl) {
+          <img class="discord-avatar" [src]="avatarUrl" alt="" width="40" height="40" />
+        }
+        <p>Connecté avec Discord : <strong>{{ discordName }}</strong></p>
+      </div>
+    } @else if (providers().discord) {
+      <p class="ds-muted">
+        Rattache ton Discord pour te connecter en un clic. Tes morts et tes appareils restent sur ce compte.
+      </p>
+      <div class="ds-row">
+        <button type="button" class="ds-btn" [disabled]="linkBusy()" (click)="linkDiscord()">
+          Rattacher mon Discord
+        </button>
+      </div>
+    } @else {
+      <p class="ds-muted">La connexion Discord n'est pas activée sur ce serveur.</p>
+    }
+  </section>
 
   <section class="ds-card ds-stack">
     <h2 class="ds-card__title">Raccourcis</h2>
