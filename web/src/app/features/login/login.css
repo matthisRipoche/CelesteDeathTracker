@@ -15,3 +15,6 @@
 .ds-tab { flex: 1; }
 
 .legal { text-align: center; font-size: var(--text-xs); }
+
+.or { display: flex; align-items: center; gap: var(--space-3); }
+.or::before, .or::after { content: ''; flex: 1; border-top: var(--border-width) solid var(--color-border); }

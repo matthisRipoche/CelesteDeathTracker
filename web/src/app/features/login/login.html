@@ -47,6 +47,13 @@
     <button type="submit" class="ds-btn ds-btn--primary ds-btn--lg" [class.is-loading]="busy()" [disabled]="busy()">
       {{ mode() === 'login' ? 'Se connecter' : 'Créer le compte' }}
     </button>
+
+    @if (providers().discord) {
+      <div class="or" role="separator"><span class="ds-muted">ou</span></div>
+      <button type="button" class="ds-btn ds-btn--lg" (click)="loginWithDiscord()">
+        Continuer avec Discord
+      </button>
+    }
   </form>
 
   <p class="legal ds-muted">Projet de fan, non affilié à Extremely OK Games.</p>

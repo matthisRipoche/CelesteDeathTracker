@@ -1,5 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
@@ -25,8 +26,13 @@ export class Login {
   }
 
   protected readonly mode = signal<'login' | 'register'>('login');
-  protected readonly error = signal<string | null>(null);
+  protected readonly error = signal<string | null>(
+    this.route.snapshot.queryParamMap.get('discord') === 'erreur'
+      ? 'La connexion avec Discord a échoué. Réessaie.'
+      : null,
+  );
   protected readonly busy = signal(false);
+  protected readonly providers = toSignal(this.auth.providers(), { initialValue: { discord: false } });
 
   // Formulaire réactif : la structure et les règles de validation sont déclarées en TypeScript
   protected readonly form = inject(FormBuilder).nonNullable.group({
@@ -67,6 +73,12 @@ export class Login {
       },
       error: (e) => this.fail(e),
     });
+  }
+
+  /** Navigation complète (pas le routeur) : on quitte le site pour Discord, qui nous rappelle ensuite. */
+  protected loginWithDiscord(): void {
+    this.auth.rememberReturnUrl(this.returnUrl);
+    window.location.href = '/api/auth/oauth2/discord';
   }
 
   private fail(err: unknown): void {

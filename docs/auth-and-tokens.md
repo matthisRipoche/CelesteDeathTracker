@@ -90,8 +90,21 @@ Le contenu de `deaths` suit `docs/data-model.md`. Les champs `mod` et `map` peuv
 | Limitation de débit (ingestion, pairing, tentatives de code) | **Fait** (en mémoire) |
 | Persistance des `SessionEvent` | À faire |
 | Pairing par code (au lieu du copier-coller) | **Fait** (voir ci-dessous) |
+| Connexion et rattachement Discord (OAuth2, scope `identify`) | **Fait** (voir ci-dessous) |
 
 Choix retenu pour le site : **session par cookie** plutôt que JWT (même domaine, cookie HttpOnly non lisible par JavaScript, révocation immédiate côté serveur).
+
+## Connexion Discord
+
+Bouton « Continuer avec Discord » sur la page de login, et « Rattacher mon Discord » sur le profil. Actif seulement si `DISCORD_CLIENT_ID` et `DISCORD_CLIENT_SECRET` sont définis.
+
+- **Flux** : `GET /api/auth/oauth2/discord` redirige vers Discord ; retour sur `GET /api/auth/oauth2/callback/discord` ; Spring Security échange le code, puis `DiscordOAuth2UserService` retrouve ou crée le compte. La session et le cookie sont les mêmes qu'avec le mot de passe : le reste du site, les tokens d'API et l'appairage ne changent pas.
+- **Données demandées** : scope `identify` seulement (identifiant, pseudo, avatar). Pas d'email : un compte créé par Discord a `email` et `password_hash` à NULL.
+- **Identité de session = ID du compte** (et non plus l'email), car un compte Discord peut ne pas avoir d'email. `CurrentUser.user(auth)` est le seul endroit qui la traduit en compte.
+- **Rattachement** : `POST /api/auth/discord/link` (session + CSRF) note en session quel compte le demande, puis le front envoie vers Discord. Refusé si ce Discord appartient à un autre compte ou si le compte a déjà un autre Discord.
+- **Adresses de retour à déclarer chez Discord** : `https://celeste.matthisripoche.com/api/auth/oauth2/callback/discord` (prod), `http://localhost:8090/api/auth/oauth2/callback/discord` (Docker), `http://localhost:4200/api/auth/oauth2/callback/discord` (`ng serve`).
+- **Après la connexion**, retour à la page demandée avant (ex. `/pair`), mémorisée en `sessionStorage` côté front.
+- Pas encore de « détacher Discord ».
 
 ## Appairage par code (méthode normale)
 

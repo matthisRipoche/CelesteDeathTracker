@@ -162,6 +162,8 @@ jobs:
           TAG: ${{ needs.images.outputs.tag }}
           GHCR_USER: ${{ github.actor }}
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DISCORD_CLIENT_ID: ${{ secrets.DISCORD_CLIENT_ID }}
+          DISCORD_CLIENT_SECRET: ${{ secrets.DISCORD_CLIENT_SECRET }}
         run: |
           # Le jeton GitHub (valable le temps du job) est transmis par stdin : jamais écrit sur le disque
           printf '%s' "$GHCR_TOKEN" | ssh -i ~/.ssh/deploy_key -p "$PORT" "$USER@$HOST" \
@@ -173,6 +175,9 @@ jobs:
              touch .env
              sed -i '/^IMAGE_PREFIX=/d;/^TAG=/d' .env
              printf 'IMAGE_PREFIX=%s\nTAG=%s\n' '$PREFIX' '$TAG' >> .env
+             # Connexion Discord : les valeurs viennent des secrets GitHub (environnement production)
+             sed -i '/^DISCORD_CLIENT_/d' .env
+             printf 'DISCORD_CLIENT_ID=%s\nDISCORD_CLIENT_SECRET=%s\n' '$DISCORD_CLIENT_ID' '$DISCORD_CLIENT_SECRET' >> .env
              docker compose -f docker-compose.prod.yml pull
              docker compose -f docker-compose.prod.yml up -d --remove-orphans
              docker logout ghcr.io

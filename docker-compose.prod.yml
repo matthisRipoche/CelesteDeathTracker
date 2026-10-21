@@ -41,6 +41,9 @@ services:
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       # Adresse du SITE : le mod ouvre https://<domaine>/pair pour l'association
       PUBLIC_URL: https://${DOMAIN:?définir DOMAIN dans .env}
+      # Connexion Discord : identifiants de l'application Discord (vide = bouton masqué)
+      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID:-}
+      DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET:-}
       # Le navigateur parle HTTPS à Traefik : cookies de session marqués Secure
       SERVER_SERVLET_SESSION_COOKIE_SECURE: "true"
       SERVER_SERVLET_SESSION_COOKIE_SAME_SITE: lax

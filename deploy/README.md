@@ -66,7 +66,11 @@ Générer le mot de passe **sur le serveur** (il ne doit passer ni par un chat n
 ```bash
 openssl rand -base64 36 | tr -d '/+=\n' | cut -c1-40
 ```
-`IMAGE_PREFIX` et `TAG` sont ajoutés automatiquement par chaque déploiement.
+Connexion Discord (facultatif) : crée les secrets `DISCORD_CLIENT_ID` et `DISCORD_CLIENT_SECRET` dans GitHub (Settings > Environments > production > Environment secrets ; portail développeur Discord, onglet OAuth2). Le déploiement les écrit dans le `.env` du serveur, ne les ajoute pas à la main. L'adresse de retour à déclarer chez Discord est `https://<domaine>/api/auth/oauth2/callback/discord`. Sans ces deux secrets, le bouton « Continuer avec Discord » n'apparaît pas.
+
+**Règle : les secrets vivent dans GitHub** (environnement `production`), pas sur le serveur. Pour une nouvelle variable secrète : créer le secret, l'ajouter à l'étape « Mise à jour des conteneurs » de `ci-cd.yml` et la passer dans `docker-compose.prod.yml`. Seul `POSTGRES_PASSWORD` reste à générer une fois sur le serveur.
+
+`IMAGE_PREFIX`, `TAG` et `DISCORD_CLIENT_*` sont écrits automatiquement par chaque déploiement.
 
 **DNS** : déjà fait. `celeste.matthisripoche.com` pointe vers `57.129.139.62` (vérifie avec `nslookup`).
 

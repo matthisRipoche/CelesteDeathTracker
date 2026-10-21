@@ -26,10 +26,11 @@ export const authGuard: CanActivateFn = (_route, state) => {
 export const guestGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
   const router = inject(Router);
-  const toHome = router.parseUrl('/');
+  // Retour de Discord : on rouvre la page demandée avant la connexion (ex. /pair), sinon l'accueil
+  const toHome = () => router.parseUrl(auth.takeReturnUrl() ?? '/');
 
   if (auth.isKnown()) {
-    return auth.isAuthenticated() ? toHome : true;
+    return auth.isAuthenticated() ? toHome() : true;
   }
-  return auth.loadCurrentUser().pipe(map((u) => (u ? toHome : true)));
+  return auth.loadCurrentUser().pipe(map((u) => (u ? toHome() : true)));
 };

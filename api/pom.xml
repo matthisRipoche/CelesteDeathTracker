@@ -47,6 +47,11 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
+		<!-- Connexion via Discord (OAuth2 « authorization code ») -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security-oauth2-client</artifactId>
+		</dependency>
 		<!-- /actuator/health : sert au healthcheck Docker -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
