@@ -51,3 +51,44 @@ export interface FaceDetail {
   evolution: EvolutionPoint[];
   recent: RecentAttempt[];
 }
+
+/**
+ * Une mort dans une room (GET /api/faces/room). x et y sont les coordonnées du monde de la map, l'axe Y
+ * va vers le bas. first = première mort de sa tentative, celle qui fait perdre le deathless.
+ */
+export interface DeathPoint {
+  deathId: number;
+  attemptId: number;
+  at: number;
+  x: number;
+  y: number;
+  first: boolean;
+}
+
+/** Ce qui est arrivé à une tentative entrée dans la room : franchie, morte ici, ou terminée ici sans mourir. */
+export type RoomOutcomeKind = 'cleared' | 'died' | 'left';
+
+export interface RoomOutcome {
+  attemptId: number;
+  startedAt: number;
+  outcome: RoomOutcomeKind;
+}
+
+/** stopRate = stops / entries, toujours entre 0 et 1. position commence à 1. */
+export interface RoomDetail {
+  sid: string;
+  side: Side;
+  mapName: string | null;
+  room: string;
+  position: number;
+  roomCount: number;
+  previousRoom: string | null;
+  nextRoom: string | null;
+  entries: number;
+  stops: number;
+  stopRate: number;
+  deathsTotal: number;
+  lastDeathAt: number | null;
+  points: DeathPoint[];
+  outcomes: RoomOutcome[];
+}

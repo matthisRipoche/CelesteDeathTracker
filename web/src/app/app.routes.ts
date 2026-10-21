@@ -8,6 +8,7 @@ import { Live } from './features/live/live';
 import { Maps } from './features/maps/maps';
 import { Profile } from './features/profile/profile';
 import { Pair } from './features/pair/pair';
+import { RoomDetailPage } from './features/room-detail/room-detail';
 import { Tokens } from './features/tokens/tokens';
 
 export const routes: Routes = [
@@ -17,6 +18,7 @@ export const routes: Routes = [
   { path: 'live', component: Live, canActivate: [authGuard] },
   { path: 'maps', component: Maps, canActivate: [authGuard] },
   { path: 'maps/:side', component: FaceDetailPage, canActivate: [authGuard] },
+  { path: 'maps/:side/:room', component: RoomDetailPage, canActivate: [authGuard] },
   // Ancienne adresse du détail d'une map (par SID seul) : la face est désormais dans le chemin.
   { path: 'map', redirectTo: 'maps' },
   { path: 'profile', component: Profile, canActivate: [authGuard] },

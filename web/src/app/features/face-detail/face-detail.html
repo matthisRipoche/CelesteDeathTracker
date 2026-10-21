@@ -64,7 +64,8 @@
             <ul class="route">
               @for (r of rooms(); track r.room) {
                 <li class="room" [class.crux]="r.crux">
-                  <span class="room-name">{{ r.room }}</span>
+                  <a class="room-name" [routerLink]="['/maps', d.side.toLowerCase(), r.room]" [queryParams]="{ sid: d.sid }"
+                     [attr.aria-label]="'Détail de la room ' + r.room">{{ r.room }}</a>
                   <span class="node" aria-hidden="true"></span>
                   <span class="bar-track"><span class="bar" [style.width.%]="r.width"></span></span>
                   <span class="ds-display count" [attr.aria-label]="r.endings + ' tentatives s\'arrêtent en room ' + r.room">{{ r.endings }}</span>

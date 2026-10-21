@@ -1,10 +1,14 @@
 package com.celestedeathtracker.api.service;
 
+import com.celestedeathtracker.api.dto.FaceDtos.DeathPoint;
 import com.celestedeathtracker.api.dto.FaceDtos.EvolutionPoint;
 import com.celestedeathtracker.api.dto.FaceDtos.FaceDetail;
 import com.celestedeathtracker.api.dto.FaceDtos.FaceSummary;
 import com.celestedeathtracker.api.dto.FaceDtos.RecentAttempt;
+import com.celestedeathtracker.api.dto.FaceDtos.RoomDetail;
+import com.celestedeathtracker.api.dto.FaceDtos.RoomOutcome;
 import com.celestedeathtracker.api.dto.FaceDtos.RoomStat;
+import com.celestedeathtracker.api.model.Death;
 import com.celestedeathtracker.api.repository.AttemptRepository;
 import com.celestedeathtracker.api.service.AttemptViews.View;
 import java.util.ArrayList;
@@ -30,6 +34,8 @@ public class FaceStatsService {
 
     private static final int EVOLUTION_MAX = 200;
     private static final int RECENT_MAX = 8;
+    private static final int POINTS_MAX = 500;
+    private static final int OUTCOMES_MAX = 100;
 
     private final AttemptRepository attempts;
     private final AttemptViews attemptViews;
@@ -103,7 +109,70 @@ public class FaceStatsService {
                 rooms, evolution, recent));
     }
 
+    /**
+     * Le détail d'une room ; vide si aucune tentative significative de la face n'y est entrée. Une room
+     * s'identifie par (sid, side, room) : un même nom existe dans d'autres maps.
+     */
+    public Optional<RoomDetail> room(Long userId, String sid, String side, String room) {
+        List<View> views = attemptViews.significantViews(
+                attempts.findByUserIdAndChapterAndSideOrderByStartedAtAsc(userId, sid, side));
+        // Une tentative a atteint la room si elle y est entrée, s'y est arrêtée ou y est morte : un événement
+        // d'entrée perdu (envoi sans file d'attente) ne doit pas la faire disparaître, ni dépasser 100 %.
+        List<View> entered = views.stream()
+                .filter(v -> v.rooms().contains(room) || isStop(v, room) || diedIn(v, room))
+                .toList();
+        if (entered.isEmpty()) {
+            return Optional.empty();
+        }
+
+        List<String> order = roomOrder(views);
+        int index = order.indexOf(room);
+
+        int stops = (int) entered.stream().filter(v -> isStop(v, room)).count();
+
+        List<DeathPoint> points = new ArrayList<>();
+        for (View v : entered) {
+            for (Death d : v.deaths()) {
+                if (room.equals(d.getRoom())) {
+                    points.add(new DeathPoint(d.getId(), v.attempt().getId(), d.getTimestamp(),
+                            d.getDeathX(), d.getDeathY(), d == v.deaths().get(0)));
+                }
+            }
+        }
+        points.sort(Comparator.comparingLong(DeathPoint::at));
+        Long lastDeathAt = points.isEmpty() ? null : points.get(points.size() - 1).at();
+
+        List<RoomOutcome> outcomes = tail(entered, OUTCOMES_MAX).stream()
+                .map(v -> new RoomOutcome(v.attempt().getId(), v.attempt().getStartedAt(), outcome(v, room)))
+                .toList();
+
+        return Optional.of(new RoomDetail(
+                sid, side, mapName(views), room,
+                index + 1, order.size(),
+                index > 0 ? order.get(index - 1) : null,
+                index < order.size() - 1 ? order.get(index + 1) : null,
+                entered.size(), stops, (double) stops / entered.size(),
+                points.size(), lastDeathAt,
+                tail(points, POINTS_MAX), outcomes));
+    }
+
     // ------------------------------------------------------------------ calcul
+
+    /** La tentative s'arrête dans cette room (même règle que RoomStat.endings sur la page de la face). */
+    private static boolean isStop(View v, String room) {
+        return !v.success() && room.equals(v.endRoom());
+    }
+
+    private static boolean diedIn(View v, String room) {
+        return v.deaths().stream().anyMatch(d -> room.equals(d.getRoom()));
+    }
+
+    private static String outcome(View v, String room) {
+        if (diedIn(v, room)) {
+            return "died";
+        }
+        return isStop(v, room) ? "left" : "cleared";
+    }
 
     /**
      * L'ordre des rooms de la map, déduit des tentatives : celui de la tentative qui est allée le plus
