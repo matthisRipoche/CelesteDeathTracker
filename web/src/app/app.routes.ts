@@ -1,6 +1,8 @@
 import { Routes } from '@angular/router';
 import { authGuard, guestGuard } from './core/auth.guard';
 import { devRoutes } from './dev-routes';
+import { AttemptDetailPage } from './features/attempt-detail/attempt-detail';
+import { Attempts } from './features/attempts/attempts';
 import { Dashboard } from './features/dashboard/dashboard';
 import { Login } from './features/login/login';
 import { FaceDetailPage } from './features/face-detail/face-detail';
@@ -16,6 +18,8 @@ export const routes: Routes = [
   { path: 'pair', component: Pair, canActivate: [authGuard] },
   { path: 'tokens', component: Tokens, canActivate: [authGuard] },
   { path: 'live', component: Live, canActivate: [authGuard] },
+  { path: 'attempts', component: Attempts, canActivate: [authGuard] },
+  { path: 'attempts/:id', component: AttemptDetailPage, canActivate: [authGuard] },
   { path: 'maps', component: Maps, canActivate: [authGuard] },
   { path: 'maps/:side', component: FaceDetailPage, canActivate: [authGuard] },
   { path: 'maps/:side/:room', component: RoomDetailPage, canActivate: [authGuard] },
