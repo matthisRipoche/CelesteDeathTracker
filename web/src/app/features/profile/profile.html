@@ -1,16 +1,16 @@
 <app-shell>
   <div>
     <p class="ds-badge ds-badge--accent">Compte</p>
-    <h1 class="title">Mon profil</h1>
+    <h1 class="title">Mon compte</h1>
     <p class="ds-muted lead">Ton compte et un résumé de ton activité.</p>
   </div>
 
   <div class="ds-grid two">
     <section class="ds-card ds-stack">
       <div class="identity">
-        <span class="avatar ds-pixel" aria-hidden="true">{{ initial() }}</span>
+        <app-avatar [url]="user()?.discordAvatarUrl" [name]="displayName()" [size]="64" />
         <div>
-          <p class="email">{{ user()?.email ?? user()?.discordUsername }}</p>
+          <p class="email">{{ displayName() }}</p>
           @if (user()?.createdAt; as created) {
             <p class="ds-muted">Membre depuis le {{ created | date: 'dd/MM/yyyy' }}</p>
           }
@@ -78,8 +78,9 @@
     <h2 class="ds-card__title">Raccourcis</h2>
     <div class="ds-row">
       <a class="ds-btn" routerLink="/maps">Voir mes maps</a>
-      <a class="ds-btn" routerLink="/tokens">Gérer mes appareils</a>
+      <a class="ds-btn" routerLink="/account/devices">Gérer mes appareils</a>
       <a class="ds-btn ds-btn--primary" routerLink="/pair">Associer un jeu</a>
+      <button type="button" class="ds-btn ds-btn--ghost" (click)="logout()">Déconnexion</button>
     </div>
   </section>
 </app-shell>
