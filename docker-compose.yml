@@ -32,6 +32,9 @@ services:
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       # Adresse du SITE, ouverte par le mod pour l'association (page /pair)
       PUBLIC_URL: ${PUBLIC_URL:-http://localhost:8090}
+      # Connexion Discord (facultatif : vide = bouton masqué)
+      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID:-}
+      DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET:-}
     depends_on:
       db:
         condition: service_healthy
