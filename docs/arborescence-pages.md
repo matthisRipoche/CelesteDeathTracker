@@ -87,12 +87,12 @@ Répond à « à quel endroit précis mon deathless casse-t-il, et est-ce que je
 - Dernières morts (10), avec leur position.
 - Liens vers la room précédente et la suivante ; chaque room de la page de la face mène ici.
 
-### Historique `/attempts`
-- Liste paginée de toutes les tentatives significatives (voir règle plus bas).
-- Filtres : map, face, résultat (réussie, morte, abandonnée), période.
-- Ligne : date, face, durée, résultat, room de fin, nombre de morts.
+### Historique `/attempts` (fait)
+- Liste paginée de toutes les tentatives significatives (voir règle plus bas), 20 par page, de la plus récente à la plus ancienne.
+- Filtres : face (`?sid=&side=`, depuis le lien de la page d'une face), résultat (réussie, morte, abandonnée, en cours), période prédéfinie (7 jours, 30 jours, depuis toujours).
+- Ligne : date (lien vers le détail), face, durée, résultat, room de fin, nombre de morts.
 
-### Détail d'une tentative `/attempts/:id`
+### Détail d'une tentative `/attempts/:id` (fait)
 - Résultat et durée de la tentative.
 - **Parcours** : les rooms traversées dans l'ordre, avec le temps de partie à chaque entrée.
 - Morts de la tentative : room, position, temps.
@@ -137,8 +137,8 @@ Toutes les routes sont filtrées par compte, comme `GET /api/deaths` aujourd'hui
 | `GET /api/faces` (fait) | Mes maps : une ligne par face, avec les chiffres de la carte |
 | `GET /api/faces/detail?sid=&side=` (fait) | Détail d'une face : chiffres, rooms dans l'ordre avec le nombre de fins, évolution |
 | `GET /api/faces/room?sid=&side=&room=` (fait) | Détail d'une room : arrivées, arrêts, taux d'arrêt, positions des morts (500 dernières), tentatives (100 dernières), rooms voisines |
-| `GET /api/attempts` | Historique (filtres : map, face, résultat, période ; pagination) |
-| `GET /api/attempts/{id}` | Détail d'une tentative : parcours et morts |
+| `GET /api/attempts?sid=&side=&result=&period=&page=&size=` (fait) | Historique : `{items, page, size, total}`. `period` = `7d`, `30d` ou `all` (défaut) ; `page` à partir de 0 ; `size` de 1 à 100 (défaut 20) ; paramètre invalide = 400. Pagination en mémoire (le classement dépend des morts et des entrées de room) |
+| `GET /api/attempts/{id}` (fait) | Détail d'une tentative : résumé, `route` (rooms dans l'ordre avec le temps de partie) et `deaths`. 404 si elle n'existe pas, n'est pas à ce compte ou n'est pas significative |
 | `GET /api/summary` | Tableau de bord : reprendre, chiffres du jour, maps récentes, activité |
 | `GET /api/live` (SSE) | Direct : tentative en cours et flux |
 
