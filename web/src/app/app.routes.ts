@@ -16,7 +16,10 @@ import { Tokens } from './features/tokens/tokens';
 export const routes: Routes = [
   { path: 'login', component: Login, canActivate: [guestGuard] },
   { path: 'pair', component: Pair, canActivate: [authGuard] },
-  { path: 'tokens', component: Tokens, canActivate: [authGuard] },
+  { path: 'account', component: Profile, canActivate: [authGuard] },
+  { path: 'account/devices', component: Tokens, canActivate: [authGuard] },
+  // Anciennes adresses du compte et des appareils.
+  { path: 'tokens', redirectTo: 'account/devices' },
   { path: 'live', component: Live, canActivate: [authGuard] },
   { path: 'attempts', component: Attempts, canActivate: [authGuard] },
   { path: 'attempts/:id', component: AttemptDetailPage, canActivate: [authGuard] },
@@ -25,7 +28,7 @@ export const routes: Routes = [
   { path: 'maps/:side/:room', component: RoomDetailPage, canActivate: [authGuard] },
   // Ancienne adresse du détail d'une map (par SID seul) : la face est désormais dans le chemin.
   { path: 'map', redirectTo: 'maps' },
-  { path: 'profile', component: Profile, canActivate: [authGuard] },
+  { path: 'profile', redirectTo: 'account' },
 
   // Vitrine du design system : développement uniquement (voir dev-routes.ts). En production,
   // ce fichier est remplacé par une liste vide à la compilation.

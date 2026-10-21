@@ -42,9 +42,13 @@ les tentatives deathless**, par face de map. L'unité n'est plus la mort mais la
 
 ### Navigation
 
-- **Barre du haut (bureau)** : Tableau de bord · Maps · Historique · Direct, puis à droite le menu
-  utilisateur (Compte, Appareils, Déconnexion).
-- **Barre du bas (mobile)** : Accueil · Maps · Historique · Direct · Compte.
+- **Barre latérale (bureau, fait)** : fixe à gauche sur toute la hauteur, avec la marque, Tableau de bord · Maps ·
+  Historique · Direct, puis en bas la photo de profil (avatar Discord, sinon l'initiale) et le pseudo. Un clic ouvre
+  le menu du compte : Compte, Appareils, Déconnexion. Le contenu occupe toute la largeur restante, sans
+  plafond. « Associer un jeu » n'est plus dans la navigation : il est dans Appareils et dans l'état vide du
+  tableau de bord.
+- **Barre du bas (mobile, fait)** : Accueil · Maps · Historique · Direct · Compte (avatar). La déconnexion est
+  sur la page Compte.
 - **Bandeau de direct** : visible sur toutes les pages connectées tant qu'une tentative est ouverte
   (« En jeu : Forsaken City · B, room 6a, 00:42 »), il mène à `/live`.
 - Les pages de détail ont un fil d'Ariane : Maps › Forsaken City · B › 6a.
@@ -152,7 +156,7 @@ le tableau de bord actuel.
 | Tableau de bord = total de morts, camembert, classement des rooms, dernières morts | Tableau de bord = progression et tentatives du jour |
 | `/maps` = une carte par map, nombre de morts | Une carte par **face**, tentatives et réussites |
 | `/map?sid=` = rooms et nuage de points | `/maps/:side?sid=` puis `/maps/:side/:room?sid=` |
-| `/profile` et `/tokens` en barre ou page isolée | `/account` et `/account/devices` sous le menu utilisateur |
+| `/profile` et `/tokens` en barre ou page isolée | `/account` et `/account/devices` sous le menu utilisateur (fait, anciennes adresses redirigées) |
 | Calculs dans le navigateur depuis `GET /api/deaths` | Routes de statistiques côté Spring |
 | Pas de direct | `/live` et bandeau global |
 

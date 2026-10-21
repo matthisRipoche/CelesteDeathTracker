@@ -68,8 +68,10 @@ Dessinés pour ce site en SVG pixel (voir les maquettes) :
 - **Cristal de dash** : réservé au futur suivi des dashes.
 
 ## Navigation cible
-Barre en haut sur ordinateur (marque · Tableau de bord · Maps · Historique · Direct · compte), remplacée
-par une barre du bas sur mobile, plus un bandeau doré quand une tentative est en cours. Voir
+Barre latérale à gauche sur ordinateur (`.ds-sidebar` : marque, Tableau de bord · Maps · Historique · Direct,
+et en bas le compte avec sa photo de profil `app-avatar` et le menu `.ds-menu`), remplacée par une barre du
+bas sur mobile, plus un bandeau doré quand une tentative est en cours. Le contenu prend toute la largeur
+(plus de `--content-width` dans la coque ; `--sidebar-width` règle la barre). Voir
 `docs/arborescence-pages.md`.
 
 ## Assets du jeu

@@ -1,23 +1,25 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { catchError, of } from 'rxjs';
 import { AuthService } from '../../core/auth.service';
 import { countBy } from '../../core/map-stats';
 import { DeathsLive } from '../../core/deaths-live';
 import { TokenService } from '../../core/token.service';
+import { Avatar } from '../../shared/avatar/avatar';
 import { Shell } from '../../shared/shell/shell';
 
 /** Profil du compte connecté : identité et résumé. Rien n'est modifiable côté API pour l'instant. */
 @Component({
   selector: 'app-profile',
-  imports: [DatePipe, DecimalPipe, RouterLink, Shell],
+  imports: [DatePipe, DecimalPipe, RouterLink, Avatar, Shell],
   templateUrl: './profile.html',
   styleUrl: './profile.css',
 })
 export class Profile {
   private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
   protected readonly user = this.auth.user;
   protected readonly providers = toSignal(this.auth.providers(), { initialValue: { discord: false } });
 
@@ -54,6 +56,10 @@ export class Profile {
     });
   }
 
-  /** Initiale affichée dans l'avatar (pas d'image téléversable pour l'instant). */
-  protected readonly initial = computed(() => (this.user()?.email ?? this.user()?.discordUsername ?? '?').charAt(0).toUpperCase());
+  /** Nom affiché : le pseudo Discord s'il y en a un, sinon l'email. */
+  protected readonly displayName = computed(() => this.user()?.discordUsername ?? this.user()?.email ?? 'Mon compte');
+
+  protected logout(): void {
+    this.auth.logout().subscribe(() => this.router.navigateByUrl('/login'));
+  }
 }
