@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lire un contrat d'API</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+<main>
+  <nav class="lessons" aria-label="Navigation">
+    <a href="../reference/contrat-api-aide-memoire.html">Aide-mémoire : les 4 questions</a>
+  </nav>
+
+  <p class="kicker">Leçon 1 · Contrats d'API · 10 minutes</p>
+  <h1>Lire un contrat d'API</h1>
+  <p class="lead">Quand Claude te propose une route, tu peux l'accepter ou la refuser en toute connaissance de cause, avec quatre questions.</p>
+
+  <div class="win">
+    <strong>Ce que tu sauras faire à la fin :</strong> relire un contrat proposé, dire s'il casse un client existant, et repérer ce qui n'a rien à faire dedans.
+  </div>
+
+  <h2 id="definition">Un contrat, c'est une promesse écrite</h2>
+  <p>
+    Un <strong>contrat d'API</strong> dit, entre deux programmes, ce que l'un demande et ce que l'autre répond : la route, ce qu'on envoie, ce qu'on reçoit, et ce qui se passe quand ça va mal. Dans le monde OpenAPI, c'est un fichier
+    <em>« lisible par une machine »</em> qui décrit l'API, utile parce qu'une documentation écrite à la main est souvent
+    <em>floue, incomplète ou périmée</em> (<a href="https://learn.openapis.org/introduction.html">OpenAPI, introduction</a>).
+  </p>
+  <p>
+    Dans ce projet, il n'y a pas de fichier OpenAPI : <strong>le contrat n'existe pas en un seul fichier</strong>. Il est recopié à plusieurs endroits
+    (voir <a href="#ou-vit-le-contrat">plus bas</a>), et c'est une des choses à garder en tête quand tu relis une proposition.
+  </p>
+
+  <h2 id="exemple-1">Exemple 1 : la route que nous venons de construire</h2>
+  <p>La page « détail d'une room » appelle ceci. Lis-le comme un contrat :</p>
+<pre><code>GET /api/faces/room?sid=Celeste/1-ForsakenCity&amp;side=B&amp;room=01
+
+200 {
+  "room": "01",  "side": "B",  "position": 2,  "roomCount": 3,
+  "previousRoom": "00",  "nextRoom": "02",
+  "entries": 4,  "stops": 2,  "stopRate": 0.5,
+  "deathsTotal": 1,  "lastDeathAt": 21000,
+  "points":   [ { "deathId": 7, "x": 1, "y": 2, "first": true, ... } ],
+  "outcomes": [ { "attemptId": 1, "outcome": "cleared", ... } ]
+}                                       (extrait : champs tronqués)</code></pre>
+  <p class="src">Source : <code>FaceController.java</code>, <code>FaceDtos.java</code> et <code>FaceFlowTests.java</code>.</p>
+
+  <table>
+    <thead><tr><th>Réponse</th><th>Quand</th></tr></thead>
+    <tbody>
+      <tr><td><code>200</code></td><td>La room existe pour ce compte.</td></tr>
+      <tr><td><code>400</code></td><td><code>side</code> n'est pas A, B ou C : <em>« le serveur ne peut ou ne veut pas traiter la requête à cause d'une erreur côté client »</em> (<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status">MDN</a>).</td></tr>
+      <tr><td><code>401</code></td><td>Pas de session ouverte, ou un token de mod au lieu d'une session.</td></tr>
+      <tr><td><code>404</code></td><td>Aucune tentative de <em>ce compte</em> n'a atteint cette room. Un autre compte reçoit aussi 404 : pour lui, elle n'existe pas.</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="exemple-2">Exemple 2 : le mod envoie une mort</h2>
+  <p>Ici l'appelant n'est plus le navigateur mais le <strong>mod C#</strong>, qui tourne chez le joueur : un code client que le serveur ne peut pas croire sur parole.</p>
+<pre><code>POST /api/ingest/deaths
+Authorization: Bearer cdt_...        (jamais de cookie de session)
+
+{ "timestamp": 1760000000000,  "chapter": "Celeste/1-ForsakenCity",
+  "room": "01",  "deathX": 6853,  "deathY": -2200,
+  "totalDeaths": 35012,  "sessionDeaths": 1,  "timeInRoomMs": 41000,
+  "attemptId": "…",  "side": "B",  "saveSlot": 0 }
+
+201 Created</code></pre>
+  <p class="src">Source : <code>docs/data-model.md</code> (type <code>DeathEvent</code>) et <code>FaceFlowTests.java</code>.</p>
+  <ul>
+    <li><strong>Obligatoire ou facultatif ?</strong> Tous les champs de <code>DeathEvent</code> sont obligatoires, sauf <code>attemptId</code>, <code>side</code> et <code>saveSlot</code>. Si <code>deathX</code> manque, l'API répond <code>400</code> : Jackson 3 refuse un champ numérique absent (<code>CLAUDE.md</code>).</li>
+    <li><strong>Pourquoi ces trois-là sont facultatifs ?</strong> Parce que l'ancien mod, encore installé chez des joueurs, ne les envoie pas. Le contrat doit rester vrai pour les anciens clients.</li>
+    <li><strong>Qui est le joueur ?</strong> Le serveur le déduit du token. Il n'y a <em>jamais</em> d'identifiant d'utilisateur dans le corps : un client peut mentir sur son corps, pas sur le token que le serveur a émis.</li>
+    <li><strong><code>201</code> ou <code>202</code> ?</strong> Une mort est enregistrée tout de suite : <em>« une nouvelle ressource a été créée »</em> (201). Un événement de tentative (<code>POST /api/ingest/events</code>) répond <code>202</code> : <em>« reçu, pas encore traité »</em> (<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status">MDN</a>).</li>
+  </ul>
+
+  <h2 id="exemple-3">Exemple 3 : faire évoluer sans casser</h2>
+  <p>
+    Pendant le cadrage de la page room, j'avais prévu une liste <code>recent</code> dans la réponse, puis je l'ai retirée du contrat
+    <em>avant d'écrire le code</em> : le site la calcule déjà à partir de <code>points</code>. Retirer un champ avant que quelqu'un le lise ne coûte rien. Après, c'est autre chose.
+  </p>
+  <table>
+    <thead><tr><th>Changement du contrat</th><th>Le site Angular</th></tr></thead>
+    <tbody>
+      <tr><td>Ajouter un champ facultatif <code>bestStreak</code></td><td>Continue de marcher : il ignore ce qu'il ne lit pas.</td></tr>
+      <tr><td>Renommer <code>stopRate</code> en <code>rate</code></td><td>Casse : <code>face.model.ts</code> et la page lisent <code>stopRate</code> et afficheraient « NaN % ».</td></tr>
+      <tr><td>Rendre obligatoire un champ que le mod n'envoyait pas</td><td>Casse l'ancien mod (400 sur chaque mort).</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Deux sources disent la même chose avec leurs mots. Fowler décrit le <em>Tolerant Reader</em> : un client qui n'extrait que ce dont il a besoin survit à l'ajout de champs
+    (<a href="https://www.martinfowler.com/bliki/TolerantReader.html">Martin Fowler</a>). Le guide d'API de Microsoft range parmi les changements cassants le fait d'ajouter un champ obligatoire plus tard,
+    de retirer un champ obligatoire ou de rendre un champ facultatif obligatoire
+    (<a href="https://github.com/microsoft/api-guidelines/blob/vNext/azure/Guidelines.md">Azure REST API Guidelines</a>).
+    Le cas « renommer » n'y est pas listé : c'est une conséquence, parce qu'un renommage équivaut à retirer un champ et à en ajouter un.
+  </p>
+
+  <h2 id="ou-vit-le-contrat">Où vit le contrat dans ce projet ?</h2>
+  <p>Pour la même route, les mêmes champs sont écrits plusieurs fois :</p>
+  <table>
+    <thead><tr><th>Où</th><th>Ce que c'est</th></tr></thead>
+    <tbody>
+      <tr><td><code>docs/data-model.md</code>, « Contrat API » de <code>CLAUDE.md</code></td><td>Le texte, pour décider et relire.</td></tr>
+      <tr><td><code>FaceDtos.java</code>, <code>DeathRequest.java</code></td><td>Ce que l'API fait réellement.</td></tr>
+      <tr><td><code>face.model.ts</code></td><td>Ce que le site croit recevoir.</td></tr>
+      <tr><td><code>Payloads</code>, dans le mod C#</td><td>Ce que le mod croit devoir envoyer.</td></tr>
+    </tbody>
+  </table>
+  <p>
+    <strong>Qui fait foi ?</strong> Le code Java de l'API, parce que c'est la seule version qui s'exécute. Le texte peut devenir faux sans que rien ne le signale.
+    Et aucun de ces fichiers ne vérifie les autres : seuls les tests d'API contrôlent ce que le <em>serveur</em> répond. Si un champ est renommé côté API seulement,
+    le site et le mod ne s'en aperçoivent qu'à l'exécution (le « NaN % » de l'exemple 3).
+  </p>
+  <p>
+    Il existe une manière d'avoir un vrai fichier unique : <strong>OpenAPI</strong>. On peut soit le <em>générer depuis le code</em> (il décrit alors toujours ce que l'API fait vraiment),
+    soit l'<em>écrire d'abord</em> et en tirer le code (plus rigoureux, plus lourd). Ce n'est pas fait ici ; la première option serait la plus simple si le projet grossit.
+    En attendant, une question à poser à Claude pour chaque contrat : <em>« quel endroit fait foi, et que se passe-t-il s'il dévie des autres ? »</em>
+  </p>
+
+  <h2 id="questions">Les quatre questions à poser</h2>
+  <ol class="checklist">
+    <li><strong>Qui appelle ?</strong> Le navigateur (session + CSRF) ou le mod (token Bearer) ? La mauvaise réponse ouvre une faille.</li>
+    <li><strong>Que contiennent la requête et la réponse ?</strong> Chaque champ : son nom, son type, son unité, obligatoire ou facultatif.</li>
+    <li><strong>Que se passe-t-il quand ça va mal ?</strong> Le code (400, 401, 404…) et ce que fait le client.</li>
+    <li><strong>Comment ça évolue ?</strong> Qui lit déjà ce champ ? Ajouter est presque toujours sûr ; renommer, retirer ou rendre obligatoire casse quelqu'un.</li>
+  </ol>
+
+  <h2 id="quiz">À toi : cinq relectures</h2>
+  <p>Réponds sans regarder plus haut. Le retour est immédiat.</p>
+
+  <div class="quiz" data-correct="b">
+    <fieldset>
+      <legend>1. Le mod envoie une mort sans le champ <code>deathX</code>. Que répond l'API ?</legend>
+      <label><input type="radio" name="q1" value="a"><span>201 : la mort est enregistrée</span></label>
+      <label><input type="radio" name="q1" value="b"><span>400 : la requête est refusée</span></label>
+      <label><input type="radio" name="q1" value="c"><span>500 : le serveur est planté</span></label>
+      <label><input type="radio" name="q1" value="d"><span>202 : la mort sera traitée</span></label>
+    </fieldset>
+    <p class="feedback" aria-live="polite"></p>
+    <template class="why">Le champ est obligatoire et Jackson 3 refuse un nombre absent : c'est une erreur du client, donc 400. Un 500 voudrait dire que le serveur s'est trompé.</template>
+  </div>
+
+  <div class="quiz" data-correct="c">
+    <fieldset>
+      <legend>2. Lequel de ces changements casse la page Angular de la room ?</legend>
+      <label><input type="radio" name="q2" value="a"><span>Ajouter un champ bestStreak facultatif</span></label>
+      <label><input type="radio" name="q2" value="b"><span>Ajouter une nouvelle route /api/summary</span></label>
+      <label><input type="radio" name="q2" value="c"><span>Renommer le champ stopRate en rate</span></label>
+      <label><input type="radio" name="q2" value="d"><span>Corriger une faute dans un commentaire</span></label>
+    </fieldset>
+    <p class="feedback" aria-live="polite"></p>
+    <template class="why">Le site lit <code>stopRate</code> par son nom. Un champ ajouté ou une route nouvelle ne le concernent pas ; un champ renommé disparaît pour lui.</template>
+  </div>
+
+  <div class="quiz" data-correct="a">
+    <fieldset>
+      <legend>3. Claude propose d'ajouter <code>userId</code> dans le corps de <code>POST /api/ingest/deaths</code>. Que réponds-tu ?</legend>
+      <label><input type="radio" name="q3" value="a"><span>Non, le compte doit venir du token, jamais du corps</span></label>
+      <label><input type="radio" name="q3" value="b"><span>Non, un POST ne doit jamais contenir un identifiant</span></label>
+      <label><input type="radio" name="q3" value="c"><span>Oui, le mod doit demander l'identifiant au navigateur</span></label>
+      <label><input type="radio" name="q3" value="d"><span>Oui, l'identifiant doit être envoyé dans l'URL aussi</span></label>
+    </fieldset>
+    <p class="feedback" aria-live="polite"></p>
+    <template class="why">Le mod est un code client non fiable : s'il peut écrire le <code>userId</code>, il peut écrire celui d'un autre joueur. Le serveur le déduit du token qu'il a lui-même émis (règle de <code>CLAUDE.md</code>).</template>
+  </div>
+
+  <div class="quiz" data-correct="d">
+    <fieldset>
+      <legend>4. Pourquoi <code>attemptId</code>, <code>side</code> et <code>saveSlot</code> sont-ils facultatifs dans <code>DeathEvent</code> ?</legend>
+      <label><input type="radio" name="q4" value="a"><span>Pour gagner de la place dans la requête</span></label>
+      <label><input type="radio" name="q4" value="b"><span>Parce que Jackson les ignore par défaut</span></label>
+      <label><input type="radio" name="q4" value="c"><span>Parce que le serveur les calcule seul</span></label>
+      <label><input type="radio" name="q4" value="d"><span>Parce que l'ancien mod ne les envoie pas</span></label>
+    </fieldset>
+    <p class="feedback" aria-live="polite"></p>
+    <template class="why">Des joueurs ont encore l'ancien mod. Rendre ces champs obligatoires leur ferait recevoir un 400 à chaque mort : un contrat doit rester vrai pour les clients déjà installés.</template>
+  </div>
+
+  <div class="quiz" data-correct="c">
+    <fieldset>
+      <legend>5. Claude renomme un champ dans <code>FaceDtos.java</code> et met le texte à jour. Qu'est-ce qui peut encore être faux ?</legend>
+      <label><input type="radio" name="q5" value="a"><span>Le texte, car le code Java fait foi</span></label>
+      <label><input type="radio" name="q5" value="b"><span>Les tests d'API, qui ne vérifient rien</span></label>
+      <label><input type="radio" name="q5" value="c"><span>Le site Angular, qui lit encore l'ancien nom</span></label>
+      <label><input type="radio" name="q5" value="d"><span>Rien, tout se met à jour tout seul</span></label>
+    </fieldset>
+    <p class="feedback" aria-live="polite"></p>
+    <template class="why">Rien ne relie <code>face.model.ts</code> au code Java : le site garde l'ancien nom jusqu'à ce que quelqu'un le change, et le problème n'apparaît qu'à l'exécution. D'où l'intérêt de demander à Claude de lister <em>tous</em> les endroits qui lisent le champ.</template>
+  </div>
+
+  <p class="score" data-quiz-score aria-live="polite"></p>
+
+  <h2 id="aller-plus-loin">Pour aller plus loin</h2>
+  <p>
+    <strong>Source principale à lire :</strong> <a href="https://learn.openapis.org/introduction.html">« Introduction » sur learn.openapis.org</a>. C'est court, et c'est la meilleure explication de ce qu'un contrat apporte quand il est écrit dans un fichier plutôt que dans la tête de quelqu'un.
+    Les autres sources sont dans <code>learning/RESOURCES.md</code>.
+  </p>
+  <p class="note">
+    Une chose n'est pas claire ? Demande-moi dans le terminal : tu peux me faire relire n'importe quel contrat du projet (par exemple « pourquoi
+    <code>POST /api/pairing/poll</code> répond-il <code>approved</code> une seule fois ? ») et je t'explique à partir du vrai code.
+  </p>
+</main>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

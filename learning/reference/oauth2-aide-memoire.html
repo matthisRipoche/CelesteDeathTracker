@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Aide-mémoire OAuth2</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+<main>
+  <nav class="lessons" aria-label="Navigation">
+    <a href="../lessons/0002-comprendre-oauth2-discord.html">Leçon 2 : comprendre OAuth2</a>
+  </nav>
+
+  <p class="kicker">Aide-mémoire · Authentification</p>
+  <h1>OAuth2 avec Discord</h1>
+
+  <h2 id="roles">Rôles</h2>
+  <table>
+    <tbody>
+      <tr><td>Resource owner</td><td>Le joueur</td></tr>
+      <tr><td>Client</td><td>Ton API (pas le navigateur)</td></tr>
+      <tr><td>Authorization server</td><td>Discord</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="flux">Le flux en 6 étapes</h2>
+  <ol>
+    <li>Clic → <code>GET /api/auth/oauth2/discord</code></li>
+    <li>Redirection vers Discord (<code>client_id</code>, <code>scope</code>, <code>redirect_uri</code>, <code>state</code>)</li>
+    <li>Le joueur autorise chez Discord</li>
+    <li>Retour avec <code>?code=…&amp;state=…</code></li>
+    <li>API → Discord : <code>code</code> + secret client → access token</li>
+    <li>API → Discord : <code>/users/@me</code> avec le token → <code>id</code>, pseudo, avatar</li>
+  </ol>
+
+  <h2 id="secrets">Qui voit quoi</h2>
+  <table>
+    <thead><tr><th>Donnée</th><th>Navigateur</th><th>Secret ?</th></tr></thead>
+    <tbody>
+      <tr><td><code>client_id</code></td><td>oui</td><td>non</td></tr>
+      <tr><td><code>code</code></td><td>oui</td><td>à usage court</td></tr>
+      <tr><td><code>state</code></td><td>oui</td><td>imprévisible, à comparer</td></tr>
+      <tr><td>secret client</td><td><strong>jamais</strong></td><td>oui</td></tr>
+      <tr><td>access token</td><td><strong>jamais</strong></td><td>oui</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="grille">Grille de relecture</h2>
+  <ol class="checklist">
+    <li>Qui est le client ? Le serveur, secret en variable d'environnement.</li>
+    <li>Quel scope ? Le minimum (<code>identify</code>).</li>
+    <li>Qu'est-ce qui protège le retour ? <code>state</code> + adresse de retour identique chez Discord.</li>
+    <li>Que devient l'identité ? Un compte du site + une session ordinaire.</li>
+  </ol>
+
+  <h2 id="projet">Où c'est dans le projet</h2>
+  <table>
+    <tbody>
+      <tr><td><code>DiscordOAuthConfig.java</code></td><td>Adresses Discord, scope, secret</td></tr>
+      <tr><td><code>DiscordOAuth2UserService.java</code></td><td>Infos Discord → compte du site</td></tr>
+      <tr><td><code>DiscordAccountService.java</code></td><td>Trouver, créer ou rattacher le compte</td></tr>
+      <tr><td><code>AuthController.java</code> <code>/discord/link</code></td><td>Noter le compte à rattacher avant le détour</td></tr>
+    </tbody>
+  </table>
+</main>
+</body>
+</html>
