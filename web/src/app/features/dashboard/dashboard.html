@@ -1,114 +1,124 @@
 <app-shell>
-  <div class="head">
-    <div class="titles">
-      <app-sprite name="madeline-death-1" [size]="56" />
-      <div>
-        <h1 class="title">Vue d'ensemble</h1>
-        <p class="ds-muted lead">
-          Toutes tes morts enregistrées par le mod, sur l'ensemble des maps. Les chiffres se mettent à
-          jour tout seuls.
-        </p>
-      </div>
-    </div>
-    @switch (state().status) {
-      @case ('ok') { <span class="ds-badge ds-badge--success">● À jour</span> }
-      @case ('error') { <span class="ds-badge ds-badge--danger">● API injoignable</span> }
-      @default { <span class="ds-badge">● Chargement…</span> }
+  <h1 class="ds-display title">Tableau de bord</h1>
+
+  @switch (state().status) {
+    @case ('loading') {
+      <div class="ds-skeleton tall"></div>
     }
-  </div>
-
-  @if (state().status === 'error') {
-    <div class="ds-alert ds-alert--danger" role="alert">
-      <span class="ds-alert__icon">!</span>
-      <div>
-        <p class="ds-alert__title">Impossible de joindre l'API</p>
-        <p>Vérifie qu'elle tourne (<code>docker compose ps</code>).</p>
+    @case ('error') {
+      <div class="ds-alert ds-alert--danger" role="alert">
+        <span class="ds-alert__icon">!</span>
+        <p>Impossible de charger le tableau de bord. Recharge la page pour réessayer.</p>
       </div>
-    </div>
-  }
-
-  <section class="ds-grid stats" aria-label="Chiffres clés">
-    <div class="ds-card ds-stat">
-      <span class="ds-stat__label">Morts au total</span>
-      <span class="ds-stat__value">{{ total() | number }}</span>
-      <span class="ds-stat__delta">depuis l'installation du mod</span>
-    </div>
-    <div class="ds-card ds-stat">
-      <span class="ds-stat__label">Aujourd'hui</span>
-      <span class="ds-stat__value ds-stat__value--danger">{{ today() | number }}</span>
-      <span class="ds-stat__delta">depuis minuit</span>
-    </div>
-    <div class="ds-card ds-stat">
-      <span class="ds-stat__label">Rooms touchées</span>
-      <span class="ds-stat__value ds-stat__value--info">{{ roomCount() }}</span>
-      <span class="ds-stat__delta">où tu es mort au moins une fois</span>
-    </div>
-    <div class="ds-card ds-stat">
-      <span class="ds-stat__label">Maps jouées</span>
-      <span class="ds-stat__value ds-stat__value--info">{{ byChapter().length }}</span>
-      <a class="ds-stat__delta" routerLink="/maps">Voir toutes les maps →</a>
-    </div>
-  </section>
-
-  @if (state().status === 'loading') {
-    <div class="ds-card"><div class="ds-skeleton"></div></div>
-  } @else if (state().status === 'ok' && total() === 0) {
-    <div class="ds-empty">
-      <app-sprite name="madeline-idle" [size]="64" />
-      <p class="ds-empty__title">Aucune mort pour l'instant</p>
-      <p>
-        Lance Celeste : un code s'affiche en haut de l'écran. Saisis-le sur
-        <a routerLink="/pair">Associer un jeu</a>, puis meurs un peu 😉
-      </p>
-    </div>
-  } @else {
-    <div class="ds-grid two">
-      <section class="ds-card">
-        <h2 class="ds-card__title">Morts par jour</h2>
-        <p class="ds-hint note">14 derniers jours. Le jour le plus meurtrier est en rouge.</p>
-        <app-deaths-per-day [deaths]="deaths()" [days]="14" />
-      </section>
-
-      <section class="ds-card">
-        <h2 class="ds-card__title">Où tu meurs le plus</h2>
-        <p class="ds-hint note">Part de chaque map dans le total de tes morts.</p>
-        <app-share-chart [items]="byChapter()" />
-      </section>
-    </div>
-
-    <div class="ds-grid two">
-      <section class="ds-card">
-        <h2 class="ds-card__title">Rooms les plus meurtrières</h2>
-        <p class="ds-hint note">Les 8 endroits où tu es le plus mort, toutes maps confondues.</p>
-        @for (r of topRooms(); track r.label) {
-          <div class="ds-bar-row">
-            <span class="ds-bar-row__label" [title]="r.label">{{ r.label }}</span>
-            <div class="ds-bar"><div class="ds-bar__fill" [style.width.%]="(r.count / maxRoom()) * 100"></div></div>
-            <span class="ds-bar-row__value">{{ r.count }}</span>
-          </div>
-        }
-      </section>
-
-      <section class="ds-card">
-        <h2 class="ds-card__title">Dernières morts</h2>
-        <p class="ds-hint note">Les 8 plus récentes.</p>
-        <div class="ds-table-wrap">
-          <table class="ds-table">
-            <thead>
-              <tr><th>Heure</th><th>Map</th><th>Room</th></tr>
-            </thead>
-            <tbody>
-              @for (d of recent().slice(0, 8); track d.id) {
-                <tr>
-                  <td>{{ d.timestamp | date: 'HH:mm:ss' }}</td>
-                  <td>{{ mapName(d.chapter) }}</td>
-                  <td>{{ d.room }}</td>
-                </tr>
+    }
+    @default {
+      @if (summary(); as s) {
+        @if (s.resume; as r) {
+          <section class="resume" aria-labelledby="resume-title">
+            <p class="kicker" id="resume-title">Reprendre là où tu en es</p>
+            <div class="resume-row">
+              <a class="resume-name" [routerLink]="faceLink(r)" [queryParams]="{ sid: r.sid }">
+                <span class="ds-display name">{{ title(r) }}</span>
+                <span class="ds-face" [class.ds-face--b]="r.side === 'B'" [class.ds-face--c]="r.side === 'C'" [attr.aria-label]="'Face ' + r.side">{{ r.side }}</span>
+              </a>
+              <span class="ds-badge">{{ mod(r.sid) }}</span>
+            </div>
+            <div class="progress" role="img"
+                 [attr.aria-label]="'Meilleure progression : ' + r.bestRooms + ' rooms sur ' + r.knownRooms + ' connues'">
+              <span class="progress-track"><span class="progress-bar" [class.done]="r.clears > 0" [style.width.%]="progress(r)"></span></span>
+              <span class="progress-text"><strong>{{ r.bestRooms }}</strong> / {{ r.knownRooms }} rooms</span>
+            </div>
+            <p class="resume-meta">
+              {{ r.attempts }} tentative{{ r.attempts > 1 ? 's' : '' }},
+              @if (r.clears > 0) {
+                <span class="win">deathless réussi {{ r.clears }} fois</span>,
+              } @else {
+                pas encore de deathless,
               }
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </div>
+              dernière partie le {{ r.lastPlayedAt | date: 'dd/MM à HH:mm' }}.
+            </p>
+            <a class="ds-btn ds-btn--primary" [routerLink]="faceLink(r)" [queryParams]="{ sid: r.sid }">Voir où mes tentatives s'arrêtent</a>
+          </section>
+
+          <section class="figures" aria-labelledby="today-title">
+            <h2 class="ds-sr-only" id="today-title">Aujourd'hui</h2>
+            <div class="ds-stat">
+              <span class="ds-stat__value">{{ s.today.attempts }}</span>
+              <span class="ds-stat__label">Tentatives aujourd'hui</span>
+            </div>
+            <div class="ds-stat fig-sep">
+              <span class="berry-row">
+                <span class="ds-stat__value" [class.ds-stat__value--success]="s.today.clears > 0">{{ s.today.clears }}</span>
+                @if (s.today.clears > 0) { <app-px-berry [size]="40" /> }
+              </span>
+              <span class="ds-stat__label">Deathless réussis aujourd'hui</span>
+            </div>
+            <div class="ds-stat fig-sep">
+              <span class="ds-stat__value">{{ fmt(s.today.bestAttemptMs) }}</span>
+              <span class="ds-stat__label">Plus longue tentative du jour</span>
+            </div>
+            <div class="ds-stat fig-sep">
+              @if (s.today.mostPlayed; as m) {
+                <a class="ds-display most" [routerLink]="faceLink(m)" [queryParams]="{ sid: m.sid }">{{ title(m) }} {{ m.side }}</a>
+                <span class="ds-stat__label">Face la plus travaillée, {{ m.attempts }} tentative{{ m.attempts > 1 ? 's' : '' }}</span>
+              } @else {
+                <span class="ds-stat__value">—</span>
+                <span class="ds-stat__label">Pas encore joué aujourd'hui</span>
+              }
+            </div>
+          </section>
+
+          @if (s.recent.length > 0) {
+            <section class="sec" aria-labelledby="recent-title">
+              <div class="lab">
+                <h2 id="recent-title">Maps récentes</h2>
+                <p>La barre montre les rooms atteintes par ta meilleure tentative, sur les rooms que tu as déjà vues.</p>
+                <p><a routerLink="/maps">Toutes mes maps</a></p>
+              </div>
+              <ul class="body faces">
+                @for (f of s.recent; track f.sid + f.side) {
+                  <li>
+                    <a class="face" [routerLink]="faceLink(f)" [queryParams]="{ sid: f.sid }">
+                      <span class="ds-face" [class.ds-face--b]="f.side === 'B'" [class.ds-face--c]="f.side === 'C'" [attr.aria-label]="'Face ' + f.side">{{ f.side }}</span>
+                      <span class="face-name">
+                        <span class="ds-display">{{ title(f) }}</span>
+                        <span class="face-mod">{{ mod(f.sid) }}, {{ f.lastPlayedAt | date: 'dd/MM' }}</span>
+                      </span>
+                      <span class="progress-track" aria-hidden="true"><span class="progress-bar" [class.done]="f.clears > 0" [style.width.%]="progress(f)"></span></span>
+                      <span class="face-rooms">
+                        @if (f.clears > 0) { <app-px-berry [size]="18" /> }
+                        {{ f.bestRooms }} / {{ f.knownRooms }}
+                        <span class="ds-sr-only">rooms atteintes, {{ f.clears }} deathless réussis</span>
+                      </span>
+                    </a>
+                  </li>
+                }
+              </ul>
+            </section>
+          }
+
+          <section class="sec" aria-labelledby="activity-title">
+            <div class="lab">
+              <h2 id="activity-title">Activité</h2>
+              <p>Tentatives par jour sur les 14 derniers jours, soit {{ fortnight() }} au total. La part en vert est celle des deathless réussis.</p>
+              <p><a routerLink="/attempts">Historique des tentatives</a></p>
+            </div>
+            <div class="body">
+              <app-activity-chart [days]="s.activity" />
+            </div>
+          </section>
+        } @else {
+          <section class="ds-empty first-visit" aria-labelledby="empty-title">
+            <app-px-berry [size]="48" />
+            <p class="ds-empty__title" id="empty-title">Associe ton jeu pour commencer</p>
+            <ol class="steps">
+              <li><strong>Lance Celeste</strong> avec le mod installé : un code s'affiche en haut de l'écran.</li>
+              <li><strong>Saisis ce code</strong> sur la page <a routerLink="/pair">Associer un jeu</a> (le mod l'ouvre tout seul).</li>
+              <li><strong>Joue une map</strong> : ta première tentative apparaît ici.</li>
+            </ol>
+          </section>
+        }
+      }
+    }
   }
 </app-shell>

@@ -1,20 +1,85 @@
 :host { display: block; }
 
-.head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-3);
+.title { margin: 0; font-size: var(--text-3xl); }
+.tall { height: 320px; }
+
+/* Reprendre : le seul élément surligné de la page */
+.resume {
+  display: grid; gap: var(--space-3); justify-items: start;
+  border-top: var(--border-width) solid var(--color-border-strong);
+  padding-top: var(--space-4);
 }
-.titles { display: flex; align-items: center; gap: var(--space-4); }
-.title { font-size: var(--text-2xl); }
-.lead { margin-top: var(--space-1); max-width: 56ch; }
+.kicker { margin: 0; font-weight: 700; color: var(--color-text-muted); }
+.resume-row { display: flex; align-items: flex-end; gap: var(--space-4); flex-wrap: wrap; }
+.resume-name { display: inline-flex; align-items: flex-end; gap: var(--space-4); color: inherit; text-decoration: none; }
+.resume-name:hover .name { text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 6px; }
+.name { margin: 0; font-size: clamp(2.5rem, 8vw, 5rem); }
+.resume-name .ds-face { width: 40px; height: 40px; font-size: var(--text-xl); margin-bottom: var(--space-2); }
+.resume-row .ds-badge { margin-bottom: var(--space-3); }
+.resume-meta { margin: 0; max-width: 62ch; font-size: var(--text-lg); line-height: 1.5; }
+.win { color: var(--color-success); font-weight: 600; }
 
-.stats { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
-.two { grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
-.note { margin: calc(-1 * var(--space-2)) 0 var(--space-3); }
+/* Barre de progression : rooms atteintes / rooms connues */
+.progress { display: flex; align-items: center; gap: var(--space-4); width: min(100%, 640px); }
+.progress-track { flex: 1; display: block; height: 12px; background: var(--color-surface-sunken); }
+.progress-bar { display: block; height: 100%; background: var(--color-highlight); }
+.progress-bar.done { background: var(--color-success); }
+.progress-text { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.progress-text strong { font-size: var(--text-xl); }
 
-@media (max-width: 480px) {
-  .two { grid-template-columns: 1fr; }
+/* Chiffres du jour : séparés par un filet, pas de cartes */
+.figures {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-top: var(--border-width) solid var(--color-border-strong);
+  padding-top: var(--space-5);
+}
+.figures > .ds-stat { padding: 0 var(--space-5); }
+.figures > .ds-stat:first-child { padding-left: 0; }
+.fig-sep { border-left: 1px solid var(--color-border); }
+.berry-row { display: flex; align-items: flex-end; gap: var(--space-3); order: 1; }
+.most {
+  order: 1; font-size: var(--text-2xl); line-height: 1.05; color: inherit;
+  overflow-wrap: anywhere; text-decoration: underline; text-decoration-color: var(--color-border-strong); text-underline-offset: 4px;
+}
+.most:hover { text-decoration-color: currentColor; }
+
+/* Sections : titre dans la marge, contenu à droite (comme le détail d'une face) */
+.sec {
+  display: flex; flex-wrap: wrap; gap: var(--space-4) var(--space-6);
+  border-top: var(--border-width) solid var(--color-border-strong);
+  padding-top: var(--space-4);
+}
+.lab { flex: 1 1 220px; max-width: 240px; }
+.lab h2 { margin: 0 0 var(--space-2); font-size: var(--text-lg); }
+.lab p { font-size: var(--text-sm); color: var(--color-text-muted); line-height: 1.4; }
+.body { flex: 3 1 520px; min-width: 0; }
+
+/* Maps récentes */
+.faces { list-style: none; margin: 0; padding: 0; }
+.faces li + li { border-top: 1px solid var(--color-border); }
+.face {
+  display: grid;
+  grid-template-columns: auto minmax(0, 14rem) minmax(0, 1fr) 5.5rem;
+  align-items: center; gap: var(--space-4);
+  min-height: 60px; padding: var(--space-2) 0;
+  color: inherit; text-decoration: none;
+}
+.face:hover .face-name .ds-display { text-decoration: underline; }
+.face-name { display: grid; min-width: 0; }
+.face-name .ds-display { font-size: var(--text-xl); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.face-mod { font-size: var(--text-sm); color: var(--color-text-muted); }
+.face .progress-bar { background: var(--color-text); }
+.face .progress-bar.done { background: var(--color-success); }
+.face-rooms { display: inline-flex; align-items: center; justify-content: flex-end; gap: var(--space-2); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* Première visite */
+.first-visit { justify-items: center; }
+.steps { text-align: left; max-width: 52ch; margin: var(--space-3) auto 0; padding-left: var(--space-5); display: grid; gap: var(--space-2); line-height: 1.5; }
+
+@media (max-width: 720px) {
+  .figures { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5) 0; }
+  .figures > .ds-stat:nth-child(3) { padding-left: 0; border-left: 0; }
+  .face { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .face .progress-track { grid-column: 1 / -1; grid-row: 2; }
 }

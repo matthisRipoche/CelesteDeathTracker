@@ -1,73 +1,60 @@
-import { DatePipe, DecimalPipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
+import { catchError, map, of, startWith } from 'rxjs';
+import { formatDuration, modOf, shortMapName } from '../../core/format';
+import { LiveState } from '../../core/live-poll';
+import { FaceProgress, Summary } from '../../core/summary.model';
+import { SummaryService } from '../../core/summary.service';
+import { ActivityChart } from '../../shared/charts/activity-chart';
+import { PxBerry } from '../../shared/pixel/pixel-icons';
 import { Shell } from '../../shared/shell/shell';
-import { Death } from '../../core/death.model';
-import { DeathsLive } from '../../core/deaths-live';
-import { deathsToday } from '../../core/chart-data';
-import { DeathsPerDay } from '../../shared/charts/deaths-per-day';
-import { ShareChart } from '../../shared/charts/share-chart';
-import { Sprite } from '../../shared/sprite/sprite';
 
-interface Count {
-  label: string;
-  count: number;
-}
-
+/**
+ * Tableau de bord : « où en suis-je aujourd'hui ? ». Reprendre la dernière face, chiffres du jour, maps
+ * récentes et activité sur 14 jours, tout calculé par GET /api/summary. Chargé une fois à l'ouverture :
+ * la partie en cours se suit sur /live (et dans le bandeau de la coque).
+ */
 @Component({
   selector: 'app-dashboard',
-  imports: [DatePipe, DecimalPipe, RouterLink, Shell, DeathsPerDay, ShareChart, Sprite],
+  imports: [DatePipe, RouterLink, Shell, ActivityChart, PxBerry],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
 })
 export class Dashboard {
-  /**
-   * Les morts viennent d'un flux PARTAGÉ par toutes les pages (voir core/deaths-live.ts) : interrogé
-   * toutes les 3 s, sans rien redessiner quand rien n'a changé. toSignal() le convertit en signal
-   * lisible dans le template : state().
-   */
-  protected readonly state = toSignal(inject(DeathsLive).state$, { requireSync: true });
-
-  // computed() = valeur dérivée, recalculée uniquement quand state() change.
-  protected readonly deaths = computed(() => {
-    const s = this.state();
-    return s.status === 'ok' ? s.deaths : [];
-  });
-
-  protected readonly total = computed(() => this.deaths().length);
-  protected readonly today = computed(() => deathsToday(this.deaths()));
-
-  private readonly rooms = computed(() =>
-    this.countBy((d) => `${this.mapName(d.chapter)} / ${d.room}`),
+  protected readonly state = toSignal(
+    inject(SummaryService).summary().pipe(
+      map((data): LiveState<Summary> => ({ status: 'ok', data })),
+      catchError((e: unknown) =>
+        of<LiveState<Summary>>({ status: 'error', code: e instanceof HttpErrorResponse ? e.status : 0 }),
+      ),
+      startWith<LiveState<Summary>>({ status: 'loading' }),
+    ),
+    { requireSync: true },
   );
 
-  protected readonly roomCount = computed(() => this.rooms().length);
-  protected readonly topRooms = computed(() => this.rooms().slice(0, 8));
+  protected readonly summary = computed(() => {
+    const s = this.state();
+    return s.status === 'ok' ? s.data : null;
+  });
 
-  protected readonly byChapter = computed(() => this.countBy((d) => d.chapter));
+  /** Tentatives sur les 14 jours affichés. */
+  protected readonly fortnight = computed(() =>
+    (this.summary()?.activity ?? []).reduce((n, d) => n + d.attempts, 0),
+  );
 
-  protected readonly recent = computed(() => [...this.deaths()].reverse().slice(0, 15));
+  protected readonly title = (f: { sid: string; mapName: string | null }) => f.mapName ?? shortMapName(f.sid);
+  protected readonly mod = modOf;
+  protected readonly fmt = formatDuration;
 
-  protected readonly maxRoom = computed(() => this.topRooms()[0]?.count ?? 1);
-  protected readonly maxChapter = computed(() => this.byChapter()[0]?.count ?? 1);
-
-  protected mapName(chapter: string): string {
-    return chapter.split('/').at(-1) ?? chapter;
+  /** Part des rooms connues atteinte par la meilleure tentative, en %. */
+  protected progress(f: FaceProgress): number {
+    return f.knownRooms > 0 ? (f.bestRooms / f.knownRooms) * 100 : 0;
   }
 
-  protected modName(chapter: string): string {
-    return chapter.split('/')[0];
-  }
-
-  private countBy(key: (d: Death) => string): Count[] {
-    const counts = new Map<string, number>();
-    for (const d of this.deaths()) {
-      const k = key(d);
-      counts.set(k, (counts.get(k) ?? 0) + 1);
-    }
-    return [...counts]
-      .map(([label, count]) => ({ label, count }))
-      .sort((a, b) => b.count - a.count);
+  protected faceLink(f: { side: string }): string[] {
+    return ['/maps', f.side.toLowerCase()];
   }
 }

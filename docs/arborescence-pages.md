@@ -55,12 +55,16 @@ les tentatives deathless**, par face de map. L'unité n'est plus la mort mais la
 
 ## Contenu de chaque page
 
-### Tableau de bord `/`
-Répond à « où en suis-je aujourd'hui ? ».
-- **Reprendre là où j'en suis** : la dernière face jouée, avec sa meilleure progression et un lien.
-- Chiffres du jour : tentatives, deathless réussis, meilleure tentative (durée), face la plus travaillée.
-- **Maps récentes** : 3 faces avec une barre de progression (rooms atteintes / rooms de la map).
-- Activité : tentatives par jour sur 14 jours.
+### Tableau de bord `/` (fait)
+Répond à « où en suis-je aujourd'hui ? ». Chargé une fois à l'ouverture (la partie en cours se suit sur `/live`).
+- **Reprendre là où j'en suis** : la dernière face jouée, avec sa meilleure progression et un lien. C'est
+  le seul élément surligné de la page.
+- Chiffres du jour : tentatives, deathless réussis, plus longue tentative (durée), face la plus travaillée.
+- **Maps récentes** : les 3 faces jouées avant celle de « Reprendre », avec une barre de progression.
+- **Progression d'une face** : rooms atteintes par la meilleure tentative / rooms vues sur toutes les
+  tentatives (le jeu n'envoie pas le nombre de rooms d'une map).
+- Activité : tentatives par jour sur 14 jours, part des deathless réussis en vert.
+- « Aujourd'hui » commence à minuit dans le **fuseau du navigateur** (envoyé en `tz`).
 - État vide (première visite) : les trois étapes d'appairage (lancer le jeu, saisir le code, jouer).
 
 ### Mes maps `/maps`
@@ -143,7 +147,7 @@ Toutes les routes sont filtrées par compte, comme `GET /api/deaths` aujourd'hui
 | `GET /api/faces/room?sid=&side=&room=` (fait) | Détail d'une room : arrivées, arrêts, taux d'arrêt, positions des morts (500 dernières), tentatives (100 dernières), rooms voisines |
 | `GET /api/attempts?sid=&side=&result=&period=&page=&size=` (fait) | Historique : `{items, page, size, total}`. `period` = `7d`, `30d` ou `all` (défaut) ; `page` à partir de 0 ; `size` de 1 à 100 (défaut 20) ; paramètre invalide = 400. Pagination en mémoire (le classement dépend des morts et des entrées de room) |
 | `GET /api/attempts/{id}` (fait) | Détail d'une tentative : résumé, `route` (rooms dans l'ordre avec le temps de partie) et `deaths`. 404 si elle n'existe pas, n'est pas à ce compte ou n'est pas significative |
-| `GET /api/summary` | Tableau de bord : reprendre, chiffres du jour, maps récentes, activité |
+| `GET /api/summary?tz=` (fait) | Tableau de bord : `{resume, today, recent, activity}`. `tz` = fuseau IANA du navigateur (défaut UTC, invalide = 400) ; `resume` vaut null sans tentative ; `activity` = 14 jours, jours vides compris |
 | `GET /api/live` (SSE) | Direct : tentative en cours et flux |
 
 Les statistiques se calculent côté serveur en SQL (`GROUP BY`), pas dans le navigateur comme le fait
@@ -153,7 +157,7 @@ le tableau de bord actuel.
 
 | Aujourd'hui | Après la refonte |
 |---|---|
-| Tableau de bord = total de morts, camembert, classement des rooms, dernières morts | Tableau de bord = progression et tentatives du jour |
+| Tableau de bord = total de morts, camembert, classement des rooms, dernières morts | Tableau de bord = progression et tentatives du jour (fait) |
 | `/maps` = une carte par map, nombre de morts | Une carte par **face**, tentatives et réussites |
 | `/map?sid=` = rooms et nuage de points | `/maps/:side?sid=` puis `/maps/:side/:room?sid=` |
 | `/profile` et `/tokens` en barre ou page isolée | `/account` et `/account/devices` sous le menu utilisateur (fait, anciennes adresses redirigées) |
@@ -169,6 +173,6 @@ le tableau de bord actuel.
    en page jusqu'à leur refonte.
 2. Détail d'une face (route + page) : c'est la page dont toutes les autres sont un résumé.
 3. Mes maps, puis détail d'une room, puis Historique et détail d'une tentative.
-4. Tableau de bord.
+4. Tableau de bord (fait).
 5. Direct (SSE) et bandeau.
 6. Compte et Appareils (déplacement des pages existantes).
