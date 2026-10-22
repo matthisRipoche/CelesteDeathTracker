@@ -178,7 +178,7 @@ public class FaceStatsService {
      * L'ordre des rooms de la map, déduit des tentatives : celui de la tentative qui est allée le plus
      * loin (de préférence terminée), puis les rooms vues ailleurs dans l'ordre où on les rencontre.
      */
-    private List<String> roomOrder(List<View> views) {
+    static List<String> roomOrder(List<View> views) {
         View reference = views.stream()
                 .max(Comparator.<View>comparingInt(v -> "completed".equals(v.attempt().getEndReason()) ? 1 : 0)
                         .thenComparingInt(v -> v.rooms().size()))
@@ -193,7 +193,12 @@ public class FaceStatsService {
         return new ArrayList<>(order);
     }
 
-    private int roomsCleared(View v, List<String> order) {
+    /** Rooms atteintes par une tentative : toutes si elle est réussie, sinon jusqu'à sa room d'arrêt comprise. */
+    static int roomsReached(View v, List<String> order) {
+        return v.success() ? order.size() : Math.min(roomsCleared(v, order) + 1, order.size());
+    }
+
+    private static int roomsCleared(View v, List<String> order) {
         if (v.success()) {
             return order.size();
         }
@@ -201,7 +206,7 @@ public class FaceStatsService {
         return i >= 0 ? i : v.rooms().size();
     }
 
-    private String mapName(Collection<View> views) {
+    static String mapName(Collection<View> views) {
         String name = null;
         for (View v : views) {
             if (v.attempt().getMapName() != null) {
